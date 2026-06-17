@@ -21,47 +21,51 @@ public class McsdcHubScreen extends McsdcParentScreen {
         }
 
         int cx = width / 2;
-        int y = height / 4 + 48;
-        int bw = 200;
-        int gap = 24;
+        int footerY = UiLayout.footerY(height, width);
+        int bw = Math.min(200, width - UiLayout.margin(width) * 2);
+        int buttonCount = 6;
+        int startY = UiLayout.CONTENT_TOP + 12;
+        int available = footerY - startY - 8;
+        UiLayout.VerticalMenu menu = UiLayout.verticalMenu(available, buttonCount);
+        int y = startY;
 
-        addMenuButton("Find Servers", y, bw, b -> minecraft.setScreen(new McsdcBrowseScreen(this)));
-        y += gap;
+        addMenuButton("Find Servers", y, bw, menu.itemHeight(), b -> minecraft.setScreen(new McsdcBrowseScreen(this)));
+        y += menu.step();
 
-        addMenuButton("Friends", y, bw, b -> minecraft.setScreen(new McsdcFriendsScreen(this)));
-        y += gap;
+        addMenuButton("Friends", y, bw, menu.itemHeight(), b -> minecraft.setScreen(new McsdcFriendsScreen(this)));
+        y += menu.step();
 
-        addMenuButton("Recent Servers", y, bw, b -> minecraft.setScreen(new McsdcRecentScreen(this)));
-        y += gap;
+        addMenuButton("Recent Servers", y, bw, menu.itemHeight(), b -> minecraft.setScreen(new McsdcRecentScreen(this)));
+        y += menu.step();
 
-        addMenuButton("Find Player", y, bw, b -> minecraft.setScreen(new McsdcFindPlayerScreen(this)));
-        y += gap;
+        addMenuButton("Find Player", y, bw, menu.itemHeight(), b -> minecraft.setScreen(new McsdcFindPlayerScreen(this)));
+        y += menu.step();
 
-        addMenuButton("Ticket ID", y, bw, b -> minecraft.setScreen(new McsdcTicketScreen(this)));
-        y += gap;
+        addMenuButton("Ticket ID", y, bw, menu.itemHeight(), b -> minecraft.setScreen(new McsdcTicketScreen(this)));
+        y += menu.step();
 
-        addMenuButton("Clear MCSDC Servers", y, bw, b -> ServerListHelper.removeMcsdcServers());
+        addMenuButton("Clear MCSDC Servers", y, bw, menu.itemHeight(), b -> ServerListHelper.removeMcsdcServers());
 
         addRenderableWidget(Button.builder(Component.literal("Logout"), b -> {
             McsdcSystem.get().setToken("");
             McsdcSystem.get().setUsername("");
             McsdcSystem.get().setLevel(-1);
             minecraft.setScreen(new LoginBridgeScreen(parent));
-        }).bounds(cx - bw / 2 - 52, height - 52, 98, 20).build());
+        }).bounds(cx - bw / 2 - 52, footerY, 98, UiLayout.BUTTON_HEIGHT).build());
 
         addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose())
-            .bounds(cx - bw / 2 + 54, height - 52, 98, 20).build());
+            .bounds(cx - bw / 2 + 54, footerY, 98, UiLayout.BUTTON_HEIGHT).build());
     }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
-        context.centeredText(font, title, width / 2, 20, CommonColors.WHITE);
-        context.centeredText(font, "Logged in as: " + McsdcSystem.get().getUsername(), width / 2, 36, CommonColors.LIGHT_GRAY);
+        context.centeredText(font, title, width / 2, UiLayout.HEADER_LABEL_Y, CommonColors.WHITE);
+        context.centeredText(font, "Logged in as: " + McsdcSystem.get().getUsername(), width / 2, UiLayout.CONTENT_TOP, CommonColors.LIGHT_GRAY);
     }
 
-    private void addMenuButton(String label, int y, int width, Button.OnPress action) {
+    private void addMenuButton(String label, int y, int width, int height, Button.OnPress action) {
         addRenderableWidget(Button.builder(Component.literal(label), action)
-            .bounds(this.width / 2 - width / 2, y, width, 20).build());
+            .bounds(this.width / 2 - width / 2, y, width, height).build());
     }
 }

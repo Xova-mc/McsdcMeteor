@@ -33,33 +33,34 @@ public class McsdcFindPlayerScreen extends McsdcParentScreen {
 
     @Override
     protected void init() {
-        playerField = new EditBox(font, width / 2 - 100, 28, 140, 20, Component.literal("name/uuid"));
+        int margin = UiLayout.margin(width);
+        int footerY = UiLayout.footerY(height, width);
+        UiLayout.ButtonSlot back = UiLayout.backButton(width, height);
+        int searchW = Math.min(56, Math.max(44, width / 10));
+
+        playerField = new EditBox(font, width / 2 - 100, 28, Math.min(140, width - searchW - margin * 2 - 8), UiLayout.BUTTON_HEIGHT, Component.literal("name/uuid"));
         playerField.setMaxLength(64);
         playerField.setValue("popbob");
         addRenderableWidget(playerField);
 
         addRenderableWidget(Button.builder(Component.literal("Search"), b -> runSearch())
-            .bounds(width / 2 + 44, 28, 56, 20).build());
+            .bounds(playerField.getX() + playerField.getWidth() + 4, 28, searchW, UiLayout.BUTTON_HEIGHT).build());
 
-        int top = 64;
-        int bottom = height - 32;
-        serverList = new McsdcServerListWidget(16, top, width - 32, bottom - top);
+        int top = UiLayout.CONTENT_TOP + 28;
+        serverList = new McsdcServerListWidget(margin, top, width - margin * 2, footerY - top);
         serverList.setOnSelectionChanged(this::updateButtons);
         addRenderableWidget(serverList);
 
-        joinBtn = addRenderableWidget(Button.builder(Component.literal("Join"), b -> ServerListActions.join(serverList))
-            .bounds(width / 2 - 120, height - 28, 56, 20).build());
-        addBtn = addRenderableWidget(Button.builder(Component.literal("Add"), b -> ServerListActions.add(serverList))
-            .bounds(width / 2 - 60, height - 28, 56, 20).build());
-        infoBtn = addRenderableWidget(Button.builder(Component.literal("Info"), b -> ServerListActions.info(minecraft, serverList))
-            .bounds(width / 2, height - 28, 56, 20).build());
-        addAllBtn = addRenderableWidget(Button.builder(Component.literal("Add all"), b -> addAll())
-            .bounds(width / 2 + 60, height - 28, 64, 20).build());
+        joinBtn = addRenderableWidget(Button.builder(Component.literal("Join"), b -> ServerListActions.join(serverList)).build());
+        addBtn = addRenderableWidget(Button.builder(Component.literal("Add"), b -> ServerListActions.add(serverList)).build());
+        infoBtn = addRenderableWidget(Button.builder(Component.literal("Info"), b -> ServerListActions.info(minecraft, serverList)).build());
+        addAllBtn = addRenderableWidget(Button.builder(Component.literal("Add all"), b -> addAll()).build());
+
+        UiLayout.placeFooterActions(margin, back.x() - margin, footerY, List.of(joinBtn, addBtn, infoBtn, addAllBtn));
 
         addRenderableWidget(Button.builder(Component.literal("Back"), b -> onClose())
-            .bounds(width - 60, height - 28, 44, 20).build());
+            .bounds(back.x(), back.y(), back.width(), UiLayout.BUTTON_HEIGHT).build());
 
-        serverList.setOnSelectionChanged(this::updateButtons);
         updateButtons();
     }
 
@@ -113,7 +114,7 @@ public class McsdcFindPlayerScreen extends McsdcParentScreen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
-        context.centeredText(font, title, width / 2, 12, CommonColors.WHITE);
+        context.centeredText(font, title, width / 2, UiLayout.HEADER_LABEL_Y, CommonColors.WHITE);
         if (!status.isEmpty()) {
             context.centeredText(font, status, width / 2, 52, CommonColors.YELLOW);
         }

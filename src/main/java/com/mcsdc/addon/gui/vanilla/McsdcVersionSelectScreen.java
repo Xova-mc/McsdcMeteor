@@ -25,24 +25,25 @@ public class McsdcVersionSelectScreen extends McsdcParentScreen {
 
     @Override
     protected void init() {
-        int listW = Math.min(240, width - 32);
+        int margin = UiLayout.margin(width);
+        int listW = Math.min(240, width - margin * 2);
         int listX = width / 2 - listW / 2;
-        int top = 36;
-        int bottom = height - 36;
+        int top = UiLayout.CONTENT_TOP;
+        int footerY = UiLayout.footerY(height, width);
 
-        addRenderableWidget(new VersionListWidget(listX, top, listW, bottom - top, selected, version -> {
+        addRenderableWidget(new VersionListWidget(listX, top, listW, footerY - top - 8, selected, version -> {
             onSelect.accept(version);
             onClose();
         }));
 
         addRenderableWidget(Button.builder(Component.literal("Back"), b -> onClose())
-            .bounds(width / 2 - 50, height - 28, 100, 20).build());
+            .bounds(width / 2 - 50, footerY, 100, UiLayout.BUTTON_HEIGHT).build());
     }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
-        context.centeredText(font, title, width / 2, 12, CommonColors.WHITE);
+        context.centeredText(font, title, width / 2, UiLayout.HEADER_LABEL_Y, CommonColors.WHITE);
     }
 
     private static final class VersionListWidget extends AbstractWidget {

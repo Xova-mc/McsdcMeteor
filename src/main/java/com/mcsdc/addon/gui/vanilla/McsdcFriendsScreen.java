@@ -33,30 +33,33 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
 
     @Override
     protected void init() {
-        int top = 60;
-        int listH = height - top - 80;
+        int margin = UiLayout.margin(width);
+        int top = UiLayout.CONTENT_TOP + 24;
+        int footerY = UiLayout.footerY(height, width);
+        UiLayout.ButtonSlot back = UiLayout.backButton(width, height);
+        int listH = footerY - top - (locationsTab ? 0 : 28);
 
         addRenderableWidget(Button.builder(Component.literal("List"), b -> switchTab(false))
-            .bounds(16, 28, 80, 20).build());
+            .bounds(margin, 28, 80, UiLayout.BUTTON_HEIGHT).build());
         addRenderableWidget(Button.builder(Component.literal("On a server"), b -> switchTab(true))
-            .bounds(100, 28, 100, 20).build());
+            .bounds(margin + 84, 28, 100, UiLayout.BUTTON_HEIGHT).build());
 
-        listWidget = new McsdcFriendListWidget(16, top, width - 32, listH);
+        listWidget = new McsdcFriendListWidget(margin, top, width - margin * 2, listH);
         addRenderableWidget(listWidget);
 
         if (!locationsTab) {
-            nameField = new EditBox(font, 16, height - 52, width - 140, 20, Component.literal("username"));
+            nameField = new EditBox(font, margin, footerY - 24, width - margin * 2 - 58, UiLayout.BUTTON_HEIGHT, Component.literal("username"));
             nameField.setMaxLength(32);
             addRenderableWidget(nameField);
             addRenderableWidget(Button.builder(Component.literal("Add"), b -> addFriend())
-                .bounds(width - 116, height - 52, 50, 20).build());
+                .bounds(width - margin - 54, footerY - 24, 54, UiLayout.BUTTON_HEIGHT).build());
         }
 
         actionBtn = addRenderableWidget(Button.builder(Component.literal(locationsTab ? "Join" : "Remove"), b -> runAction())
-            .bounds(16, height - 28, 80, 20).build());
+            .bounds(margin, footerY, 80, UiLayout.BUTTON_HEIGHT).build());
 
         addRenderableWidget(Button.builder(Component.literal("Back"), b -> onClose())
-            .bounds(width - 60, height - 28, 44, 20).build());
+            .bounds(back.x(), back.y(), back.width(), UiLayout.BUTTON_HEIGHT).build());
 
         loadTab();
         updateActionBtn();
@@ -224,17 +227,17 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
-        context.centeredText(font, title, width / 2, 12, CommonColors.WHITE);
+        context.centeredText(font, title, width / 2, UiLayout.HEADER_LABEL_Y, CommonColors.WHITE);
         if (locationsTab) {
-            context.text(font, "Name", 20, 52, CommonColors.GRAY, true);
-            context.text(font, "Server", 136, 52, CommonColors.GRAY, true);
+            context.text(font, "Name", UiLayout.margin(width) + 4, UiLayout.CONTENT_TOP + 16, CommonColors.GRAY, true);
+            context.text(font, "Server", 136, UiLayout.CONTENT_TOP + 16, CommonColors.GRAY, true);
         } else {
-            context.text(font, "Name", 20, 52, CommonColors.GRAY, true);
-            context.text(font, "Role", 136, 52, CommonColors.GRAY, true);
-            context.text(font, "Stage", 236, 52, CommonColors.GRAY, true);
+            context.text(font, "Name", UiLayout.margin(width) + 4, UiLayout.CONTENT_TOP + 16, CommonColors.GRAY, true);
+            context.text(font, "Role", 136, UiLayout.CONTENT_TOP + 16, CommonColors.GRAY, true);
+            context.text(font, "Stage", 236, UiLayout.CONTENT_TOP + 16, CommonColors.GRAY, true);
         }
         if (!status.isEmpty()) {
-            context.centeredText(font, status, width / 2, height - 68, CommonColors.YELLOW);
+            context.centeredText(font, status, width / 2, UiLayout.footerY(height, width) - 38, CommonColors.YELLOW);
         }
         updateActionBtn();
     }

@@ -19,15 +19,19 @@ public class McsdcTicketScreen extends McsdcParentScreen {
 
     @Override
     protected void init() {
-        ticketField = new EditBox(font, width / 2 - 100, height / 2 - 10, 200, 20, Component.literal("Ticket ID"));
+        int margin = UiLayout.margin(width);
+        int footerY = UiLayout.footerY(height, width);
+        int fieldW = Math.min(200, width - margin * 2);
+
+        ticketField = new EditBox(font, width / 2 - fieldW / 2, height / 2 - 10, fieldW, UiLayout.BUTTON_HEIGHT, Component.literal("Ticket ID"));
         ticketField.setMaxLength(128);
         addRenderableWidget(ticketField);
 
         addRenderableWidget(Button.builder(Component.literal("Search"), b -> search())
-            .bounds(width / 2 - 50, height / 2 + 16, 100, 20).build());
+            .bounds(width / 2 - 50, height / 2 + 16, 100, UiLayout.BUTTON_HEIGHT).build());
 
         addRenderableWidget(Button.builder(Component.literal("Back"), b -> onClose())
-            .bounds(width / 2 - 50, height / 2 + 44, 100, 20).build());
+            .bounds(width / 2 - 50, Math.min(height / 2 + 44, footerY), 100, UiLayout.BUTTON_HEIGHT).build());
     }
 
     private void search() {
