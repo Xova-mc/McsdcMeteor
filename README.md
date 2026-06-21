@@ -14,6 +14,12 @@ needs **fabric + meteor client** (see releases for what version we're on).
 
 if you're building from source: `./gradlew build`, jar lands in `build/libs/`.
 
+## why no multi-version support
+
+tried [stonecutter](https://stonecutter.kikugie.dev/) on a branch and dual-version builds work, but its more to babysit every update than a second jar is worth.
+
+i highly recommend using [ViaFabricPlus](https://modrinth.com/mod/viafabricplus).
+
 ## what can you do with this
 
 hub from main menu / multiplayer. find servers, find player, friends, recent, ticket lookup.
