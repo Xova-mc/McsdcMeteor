@@ -8,7 +8,7 @@ needs **fabric + meteor client** (see releases for what version we're on).
 
 ## install
 
-1. grab the `.jar` from [releases](https://codeberg.org/Syu/McsdcMeteor/releases)
+1. grab the `.jar` from [releases](https://github.com/Xova-mc/McsdcMeteor/releases/)
 2. drop it in your mods folder (same place as meteor client itself)
 3. launch
 
