@@ -3,7 +3,7 @@ package com.mcsdc.addon.gui.vanilla;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mcsdc.addon.Api;
+import com.mcsdc.addon.FriendsApi;
 import com.mcsdc.addon.system.McsdcSystem;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -86,9 +86,9 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
             status = "Loading...";
             tab.loading = true;
             String path = locationsTab ? "/my/friends/locations" : "/my/friends";
-            CompletableFuture.supplyAsync(() -> Api.requestGet(path))
+            CompletableFuture.supplyAsync(() -> FriendsApi.requestGet(path))
                 .thenAccept(r -> minecraft.execute(() -> {
-                    if (r.ok()) tab.ok(Api.unwrapArray(r.body()));
+                    if (r.ok()) tab.ok(FriendsApi.unwrapArray(r.body()));
                     else tab.fail(r.error());
                     if (tab != activeTab()) return;
                     status = tab.error.isEmpty() ? "" : tab.error;
@@ -123,15 +123,15 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
             JsonObject obj = el.getAsJsonObject();
             if (locationsTab) {
                 rows.add(new McsdcFriendListWidget.Row(
-                    Api.jsonString(obj, "name"),
-                    Api.jsonString(obj, "server"),
+                    FriendsApi.jsonString(obj, "name"),
+                    FriendsApi.jsonString(obj, "server"),
                     ""
                 ));
             } else {
-                String stage = Api.jsonString(obj, "stage");
+                String stage = FriendsApi.jsonString(obj, "stage");
                 rows.add(new McsdcFriendListWidget.Row(
-                    Api.jsonString(obj, "name"),
-                    Api.jsonString(obj, "role", "user"),
+                    FriendsApi.jsonString(obj, "name"),
+                    FriendsApi.jsonString(obj, "role", "user"),
                     stage.isEmpty() ? "—" : stage
                 ));
             }
@@ -149,7 +149,7 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
         busy = "add";
         JsonObject body = new JsonObject();
         body.addProperty("name", name);
-        CompletableFuture.supplyAsync(() -> Api.requestPost("/my/friends", body))
+        CompletableFuture.supplyAsync(() -> FriendsApi.requestPost("/my/friends", body))
             .thenAccept(r -> minecraft.execute(() -> {
                 busy = null;
                 if (!r.ok()) status = r.error();
@@ -185,7 +185,7 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
         busy = name;
         JsonObject body = new JsonObject();
         body.addProperty("name", name);
-        CompletableFuture.supplyAsync(() -> Api.requestPost("/my/friends/deny", body))
+        CompletableFuture.supplyAsync(() -> FriendsApi.requestPost("/my/friends/deny", body))
             .thenAccept(r -> minecraft.execute(() -> {
                 busy = null;
                 if (!r.ok()) status = r.error();

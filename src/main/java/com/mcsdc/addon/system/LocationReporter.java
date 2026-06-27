@@ -1,7 +1,7 @@
 package com.mcsdc.addon.system;
 
 import com.google.gson.JsonObject;
-import com.mcsdc.addon.Api;
+import com.mcsdc.addon.FriendsApi;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
 import meteordevelopment.meteorclient.events.game.GameLeftEvent;
@@ -27,13 +27,13 @@ public final class LocationReporter {
         if (McsdcSystem.get().getToken().isEmpty()) return;
         String server = playSessionServer();
         if (server == null) return;
-        CompletableFuture.runAsync(() -> Api.post("/my/location", buildPayload(server)).ignoreExceptions().send());
+        CompletableFuture.runAsync(() -> FriendsApi.post("/my/location", buildPayload(server)).ignoreExceptions().send());
     }
 
     @EventHandler
     private void onGameLeft(GameLeftEvent event) {
         if (McsdcSystem.get().getToken().isEmpty()) return;
-        CompletableFuture.runAsync(() -> Api.delete("/my/location"));
+        CompletableFuture.runAsync(() -> FriendsApi.delete("/my/location"));
     }
 
     @Nullable
