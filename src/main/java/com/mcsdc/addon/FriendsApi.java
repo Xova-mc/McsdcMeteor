@@ -1,6 +1,5 @@
 package com.mcsdc.addon;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -16,8 +15,6 @@ import java.util.concurrent.Executors;
 
 // so, friends/location stay on api2, but separate from v1 sqlite search
 public final class FriendsApi {
-    private static final String[] ARRAY_KEYS = { "data", "servers", "results", "rows", "list", "items" };
-
     private static final HttpClient HTTP = HttpClient.newBuilder()
         .executor(Executors.newVirtualThreadPerTaskExecutor())
         .build();
@@ -105,17 +102,5 @@ public final class FriendsApi {
 
     public static String jsonString(JsonObject o, String key, String fallback) {
         return o.has(key) && !o.get(key).isJsonNull() ? o.get(key).getAsString() : fallback;
-    }
-
-    public static JsonArray unwrapArray(String body) {
-        JsonElement parsed = JsonParser.parseString(body);
-        if (parsed.isJsonArray()) return parsed.getAsJsonArray();
-        if (!parsed.isJsonObject()) return new JsonArray();
-
-        JsonObject root = parsed.getAsJsonObject();
-        for (String key : ARRAY_KEYS) {
-            if (root.has(key) && root.get(key).isJsonArray()) return root.getAsJsonArray(key);
-        }
-        return new JsonArray();
     }
 }

@@ -2,7 +2,6 @@ package com.mcsdc.addon.gui.vanilla;
 
 import com.google.gson.JsonObject;
 import com.mcsdc.addon.McsdcHttp;
-import com.mcsdc.addon.ServerListHelper;
 import com.mcsdc.addon.system.ServerStorage;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -46,12 +45,13 @@ public class McsdcFindPlayerScreen extends McsdcParentScreen {
 
         int top = UiLayout.CONTENT_TOP + 28;
         serverList = new McsdcServerListWidget(margin, top, width - margin * 2, footerY - top);
-        serverList.setOnSelectionChanged(this::updateButtons);
         addRenderableWidget(serverList);
 
-        joinBtn = addRenderableWidget(Button.builder(Component.literal("Join"), b -> ServerListActions.join(serverList)).build());
-        addBtn = addRenderableWidget(Button.builder(Component.literal("Add"), b -> ServerListActions.add(serverList)).build());
-        infoBtn = addRenderableWidget(Button.builder(Component.literal("Info"), b -> ServerListActions.info(minecraft, serverList)).build());
+        ServerListActions.FooterButtons footer = ServerListActions.createFooter(
+            minecraft, serverList, this::updateButtons, () -> ServerListActions.add(serverList));
+        joinBtn = addRenderableWidget(footer.join());
+        addBtn = addRenderableWidget(footer.add());
+        infoBtn = addRenderableWidget(footer.info());
         addAllBtn = addRenderableWidget(Button.builder(Component.literal("Add all"), b -> addAll()).build());
 
         UiLayout.placeFooterActions(margin, back.x() - margin, footerY, List.of(joinBtn, addBtn, infoBtn, addAllBtn));
@@ -96,9 +96,8 @@ public class McsdcFindPlayerScreen extends McsdcParentScreen {
     }
 
     private void addAll() {
-        if (results.isEmpty()) return;
-        ServerListHelper.addAllMcsdcServers(results.stream().map(s -> s.ip()).toList());
-        status = "Added all servers.";
+        String msg = ServerListActions.addAllMessage(results);
+        if (msg != null) status = msg;
     }
 
     private void updateButtons() {

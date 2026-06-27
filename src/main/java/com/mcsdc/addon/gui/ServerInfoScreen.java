@@ -3,8 +3,7 @@ package com.mcsdc.addon.gui;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.mcsdc.addon.McsdcHttp;
+import com.mcsdc.addon.AddressQuery;
 import com.mcsdc.addon.ServerListHelper;
 import com.mcsdc.addon.gui.vanilla.VanillaScreens;
 import com.mcsdc.addon.util.TicketIDGenerator;
@@ -16,7 +15,6 @@ import net.minecraft.client.multiplayer.ServerData;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static meteordevelopment.meteorclient.MeteorClient.mc;
@@ -32,20 +30,7 @@ public class ServerInfoScreen extends WindowScreen {
 
     @Override
     public void initWidgets() {
-        CompletableFuture.supplyAsync(() -> McsdcHttp.postAddressQuery(this.ip)).thenAccept(response -> {
-            if (response == null || response.isEmpty()) {
-                mc.execute(() -> add(theme.label("Not Valid")));
-                return;
-            }
-
-            mc.execute(() -> {
-                JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
-
-                if (jsonObject.has("error")) {
-                    add(theme.label("Not Valid"));
-                    return;
-                }
-
+        AddressQuery.load(this.ip, jsonObject -> {
                 WTable table = add(theme.table()).widget();
 
                 table.add(theme.horizontalSeparator("Info")).expandX().widget();
@@ -183,8 +168,7 @@ public class ServerInfoScreen extends WindowScreen {
                             accounts.row();
                     }
                 }
-            });
-        });
+        }, () -> add(theme.label("Not Valid")));
     }
 
     public static String timeAgo(long timestampMillis) {

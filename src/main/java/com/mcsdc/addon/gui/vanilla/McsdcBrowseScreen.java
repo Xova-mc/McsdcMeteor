@@ -1,9 +1,8 @@
 package com.mcsdc.addon.gui.vanilla;
 
 import com.google.gson.JsonObject;
-import com.mcsdc.addon.McsdcHttp;
 import com.mcsdc.addon.Main;
-import com.mcsdc.addon.ServerListHelper;
+import com.mcsdc.addon.McsdcHttp;
 import com.mcsdc.addon.system.MOTD;
 import com.mcsdc.addon.system.McsdcSystem;
 import com.mcsdc.addon.system.ServerSearchBuilder;
@@ -67,15 +66,16 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
         addRenderableWidget(Button.builder(Component.literal("Back"), b -> onClose())
             .bounds(back.x(), back.y(), back.width(), UiLayout.BUTTON_HEIGHT).build());
 
-        joinBtn = addRenderableWidget(Button.builder(Component.literal("Join"), b -> ServerListActions.join(serverList)).build());
-        addBtn = addRenderableWidget(Button.builder(Component.literal("Add"), b -> addSelected()).build());
-        infoBtn = addRenderableWidget(Button.builder(Component.literal("Info"), b -> ServerListActions.info(minecraft, serverList)).build());
+        ServerListActions.FooterButtons footer = ServerListActions.createFooter(
+            minecraft, serverList, this::updateActionButtons, this::addSelected);
+        joinBtn = addRenderableWidget(footer.join());
+        addBtn = addRenderableWidget(footer.add());
+        infoBtn = addRenderableWidget(footer.info());
         addAllBtn = addRenderableWidget(Button.builder(Component.literal("Add all"), b -> addAll()).build());
         shuffleBtn = addRenderableWidget(Button.builder(Component.literal("Shuffle"), b -> shuffle()).build());
 
         UiLayout.placeFooterActions(margin, back.x() - margin, footerY, List.of(joinBtn, addBtn, infoBtn, addAllBtn, shuffleBtn));
 
-        serverList.setOnSelectionChanged(this::updateActionButtons);
         if (!state.results.isEmpty()) serverList.setServers(state.results);
         updateActionButtons();
     }
@@ -158,9 +158,8 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
     }
 
     private void addAll() {
-        if (state.results.isEmpty()) return;
-        ServerListHelper.addAllMcsdcServers(state.results.stream().map(s -> s.ip()).toList());
-        state.statusMessage = "Added all servers.";
+        String msg = ServerListActions.addAllMessage(state.results);
+        if (msg != null) state.statusMessage = msg;
     }
 
     private void shuffle() {

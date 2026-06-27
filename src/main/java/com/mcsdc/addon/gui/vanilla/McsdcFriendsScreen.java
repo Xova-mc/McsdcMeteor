@@ -86,7 +86,7 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
             tab.loading = true;
             String path = locationsTab ? "/my/friends/locations" : "/my/friends";
             GuiAsync.run(minecraft, () -> FriendsApi.requestGet(path), r -> {
-                if (r.ok()) tab.ok(FriendsApi.unwrapArray(r.body()));
+                if (r.ok()) tab.ok(ServerSearchResults.unwrapArray(r.body()));
                 else tab.fail(r.error());
                 if (tab != activeTab()) return;
                 status = tab.error.isEmpty() ? "" : tab.error;

@@ -54,7 +54,16 @@ public final class ServerSearchResults {
     }
 
     @Nullable
-    private static JsonArray unwrapArray(JsonObject root) {
+    public static JsonArray unwrapArray(String body) {
+        JsonElement parsed = JsonParser.parseString(body);
+        if (parsed.isJsonArray()) return parsed.getAsJsonArray();
+        if (!parsed.isJsonObject()) return new JsonArray();
+        JsonArray array = unwrapArray(parsed.getAsJsonObject());
+        return array != null ? array : new JsonArray();
+    }
+
+    @Nullable
+    static JsonArray unwrapArray(JsonObject root) {
         if (root.has("error")) return null;
 
         for (String key : ARRAY_KEYS) {

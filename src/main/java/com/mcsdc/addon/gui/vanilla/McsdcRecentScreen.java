@@ -41,9 +41,11 @@ public class McsdcRecentScreen extends McsdcParentScreen {
             serverList.setServers(List.of());
         }).bounds(margin, footerY, 72, UiLayout.BUTTON_HEIGHT).build());
 
-        joinBtn = addRenderableWidget(Button.builder(Component.literal("Join"), b -> ServerListActions.join(serverList)).build());
-        addBtn = addRenderableWidget(Button.builder(Component.literal("Add"), b -> ServerListActions.add(serverList)).build());
-        infoBtn = addRenderableWidget(Button.builder(Component.literal("Info"), b -> ServerListActions.info(minecraft, serverList)).build());
+        ServerListActions.FooterButtons footer = ServerListActions.createFooter(
+            minecraft, serverList, this::updateButtons, () -> ServerListActions.add(serverList));
+        joinBtn = addRenderableWidget(footer.join());
+        addBtn = addRenderableWidget(footer.add());
+        infoBtn = addRenderableWidget(footer.info());
         removeBtn = addRenderableWidget(Button.builder(Component.literal("Remove"), b -> removeSelected()).build());
 
         UiLayout.placeFooterActions(margin + 76, back.x() - margin, footerY, List.of(joinBtn, addBtn, infoBtn, removeBtn));
@@ -51,7 +53,6 @@ public class McsdcRecentScreen extends McsdcParentScreen {
         addRenderableWidget(Button.builder(Component.literal("Back"), b -> onClose())
             .bounds(back.x(), back.y(), back.width(), UiLayout.BUTTON_HEIGHT).build());
 
-        serverList.setOnSelectionChanged(this::updateButtons);
         serverList.setServers(servers);
         updateButtons();
     }
