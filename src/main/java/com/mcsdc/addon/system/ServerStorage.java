@@ -1,8 +1,9 @@
 package com.mcsdc.addon.system;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mcsdc.addon.Api;
+import com.google.gson.JsonParser;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -17,36 +18,66 @@ public record ServerStorage(String ip, String version, @Nullable Long lastScanne
     }
 
     public static List<ServerStorage> fromJsonArray(String jsonResponse) {
+        return fromJsonArray(JsonParser.parseString(jsonResponse).getAsJsonArray());
+    }
+
+    public static List<ServerStorage> fromJsonArray(JsonArray array) {
         List<ServerStorage> list = new ArrayList<>();
-        JsonArray array = Api.unwrapArray(jsonResponse);
-
-        array.forEach(node -> {
-            JsonObject obj = Api.normalizeServer(node.getAsJsonObject());
-            String address = obj.get("address").getAsString();
-            String version = Api.displayVersion(obj);
-
-            long lastScanned = Api.timeToMs(obj, "last_scanned");
-            long lastSeen = Api.timeToMs(obj, "last_seen_online");
-            if (lastSeen == 0) lastSeen = maxHistoryLastSeen(obj);
-
-            list.add(new ServerStorage(
-                address,
-                version,
-                lastScanned > 0 ? lastScanned : null,
-                lastSeen > 0 ? lastSeen : null
-            ));
-        });
-
+        for (JsonElement node : array) {
+            ServerStorage server = fromJsonElement(node);
+            if (server != null) list.add(server);
+        }
         return list;
     }
 
-    private static long maxHistoryLastSeen(JsonObject server) {
-        if (!server.has("historical") || !server.get("historical").isJsonArray()) return 0;
-        long max = 0;
-        for (var el : server.getAsJsonArray("historical")) {
-            if (!el.isJsonObject()) continue;
-            max = Math.max(max, Api.timeToMs(el.getAsJsonObject(), "last_seen"));
+    @Nullable
+    private static ServerStorage fromJsonElement(JsonElement node) {
+        if (!node.isJsonObject()) return null;
+        JsonObject obj = node.getAsJsonObject();
+        if (!obj.has("address") || obj.get("address").isJsonNull()) return null;
+
+        return new ServerStorage(
+            obj.get("address").getAsString(),
+            readVersion(obj),
+            readTime(obj, "last_scanned", "scanned"),
+            readTime(obj, "last_seen_online", "last_online")
+        );
+    }
+
+    private static String readVersion(JsonObject obj) {
+        if (!obj.has("version") || obj.get("version").isJsonNull()) return "";
+        JsonElement version = obj.get("version");
+        if (version.isJsonPrimitive()) return version.getAsString();
+        if (version.isJsonObject()) {
+            JsonObject versionObject = version.getAsJsonObject();
+            if (versionObject.has("name") && !versionObject.get("name").isJsonNull()) {
+                return versionObject.get("name").getAsString();
+            }
+            if (versionObject.has("protocol") && !versionObject.get("protocol").isJsonNull()) {
+                return versionObject.get("protocol").getAsString();
+            }
         }
-        return max;
+        return "";
+    }
+
+    @Nullable
+    private static Long readTime(JsonObject obj, String primary, String fallback) {
+        Long value = readTime(obj, primary);
+        return value != null && value > 0 ? value : readTime(obj, fallback);
+    }
+
+    @Nullable
+    private static Long readTime(JsonObject obj, String key) {
+        if (!obj.has(key) || obj.get(key).isJsonNull()) return null;
+        JsonElement element = obj.get(key);
+        if (!element.isJsonPrimitive()) return null;
+
+        try {
+            if (element.getAsJsonPrimitive().isNumber()) return element.getAsLong();
+            String text = element.getAsString().trim();
+            return text.isEmpty() ? null : Long.parseLong(text);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 }
