@@ -14,7 +14,8 @@ import static meteordevelopment.meteorclient.MeteorClient.mc;
 
 public class Main extends MeteorAddon {
     public static final Logger LOG = LogUtils.getLogger();
-    public static String apiBase = "https://interact.mcsdc.online/api2";
+    public static String mainEndpoint = "https://interact.mcsdc.online/api";
+    public static String friendsApiBase = "https://interact.mcsdc.online/api2";
 
     @Override
     public void onInitialize() {
