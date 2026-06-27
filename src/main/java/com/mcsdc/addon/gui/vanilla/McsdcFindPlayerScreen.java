@@ -1,7 +1,7 @@
 package com.mcsdc.addon.gui.vanilla;
 
 import com.google.gson.JsonObject;
-import com.mcsdc.addon.Api;
+import com.mcsdc.addon.McsdcHttp;
 import com.mcsdc.addon.ServerListHelper;
 import com.mcsdc.addon.system.FindPlayerSearchBuilder;
 import com.mcsdc.addon.system.ServerStorage;
@@ -75,7 +75,7 @@ public class McsdcFindPlayerScreen extends McsdcParentScreen {
         status = "Searching...";
         CompletableFuture.supplyAsync(() -> {
             JsonObject body = FindPlayerSearchBuilder.create(query);
-            return Api.postJson("/search/player", body);
+            return McsdcHttp.post(body);
         }).thenAccept(response -> minecraft.execute(() -> {
             searching = false;
             ServerSearchResults.ParseResult parsed = ServerSearchResults.parse(response);
@@ -100,7 +100,7 @@ public class McsdcFindPlayerScreen extends McsdcParentScreen {
 
     private void addAll() {
         if (results.isEmpty()) return;
-        ServerListHelper.addAllMcsdcServers(results.stream().map(ServerStorage::ip).toList());
+        ServerListHelper.addAllMcsdcServers(results.stream().map(s -> s.ip()).toList());
         status = "Added all servers.";
     }
 

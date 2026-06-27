@@ -1,7 +1,8 @@
 package com.mcsdc.addon.gui;
 
 import com.google.gson.JsonObject;
-import com.mcsdc.addon.Api;
+import com.google.gson.JsonParser;
+import com.mcsdc.addon.McsdcHttp;
 import meteordevelopment.meteorclient.gui.GuiThemes;
 import meteordevelopment.meteorclient.gui.WindowScreen;
 import meteordevelopment.meteorclient.gui.widgets.containers.WTable;
@@ -74,32 +75,34 @@ public class EditFlagsScreen extends WindowScreen {
 
     @Override
     public void initWidgets() {
-        CompletableFuture.supplyAsync(() -> {
-            String response = Api.postJson("/search/query", Api.addressBody(this.ip));
-            if (response == null || response.isEmpty()) return null;
-            JsonObject server = Api.normalizeServer(Api.unwrapObject(response));
-            return server.has("error") ? null : server;
-        }).thenAccept(server -> {
-            if (server == null) {
+        CompletableFuture.supplyAsync(() -> McsdcHttp.postAddressQuery(this.ip)).thenAccept(response -> {
+            if (response == null || response.isEmpty()){
                 mc.execute(() -> add(theme.label("Not Valid")));
                 return;
             }
 
             mc.execute(() -> {
+                JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
+
+                if (jsonObject.has("error")) {
+                    add(theme.label("Not Valid"));
+                    return;
+                }
+
                 WTable table = add(theme.table()).widget();
                 table.minWidth = 300;
 
-                if (server.has("notes")) {
-                    notesSetting.set(server.get("notes").getAsString());
+                if (jsonObject.has("notes")) {
+                    notesSetting.set(jsonObject.get("notes").getAsString());
                 }
 
-                JsonObject status = server.getAsJsonObject("status");
-                griefedSetting.set(flag(status, "griefed"));
-                savedSetting.set(flag(status, "save_for_later"));
-                visitedSetting.set(flag(status, "visited"));
-                moddedSetting.set(flag(status, "modded"));
-                whitelistSetting.set(flag(status, "whitelist"));
-                bannedSetting.set(flag(status, "banned"));
+                JsonObject status = jsonObject.getAsJsonObject("status");
+                griefedSetting.set(status.get("griefed").getAsBoolean());
+                savedSetting.set(status.get("save_for_later").getAsBoolean());
+                visitedSetting.set(status.get("visited").getAsBoolean());
+                moddedSetting.set(status.get("modded").getAsBoolean());
+                whitelistSetting.set(status.get("whitelist").getAsBoolean());
+                bannedSetting.set(status.get("banned").getAsBoolean());
                 table.add(theme.settings(settings)).expandX();
                 table.row();
                 table.add(theme.button("Save")).expandX().widget().action = this::setMarked;
@@ -109,21 +112,23 @@ public class EditFlagsScreen extends WindowScreen {
     }
 
     public void setMarked(){
-        JsonObject body = new JsonObject();
+        JsonObject mainJson = new JsonObject();
+        JsonObject innerJson = new JsonObject();
         JsonObject flagJson = new JsonObject();
 
+        flagJson.addProperty("visited", visitedSetting.get());
         flagJson.addProperty("griefed", griefedSetting.get());
         flagJson.addProperty("modded", moddedSetting.get());
+        flagJson.addProperty("save_for_later", savedSetting.get());
         flagJson.addProperty("whitelist", whitelistSetting.get());
+        flagJson.addProperty("banned", bannedSetting.get());
 
-        body.addProperty("address", ip);
-        body.addProperty("note", notesSetting.get());
-        body.add("flags", flagJson);
+        innerJson.addProperty("address", this.ip);
+        innerJson.addProperty("notes", notesSetting.get());
+        innerJson.add("flags", flagJson);
+        innerJson.addProperty("joined", true);
+        mainJson.add("update", innerJson);
 
-        CompletableFuture.runAsync(() -> Api.post("/update/server", body).send());
-    }
-
-    private static boolean flag(JsonObject status, String key) {
-        return status.has(key) && status.get(key).getAsBoolean();
+        CompletableFuture.runAsync(() -> McsdcHttp.post(mainJson));
     }
 }

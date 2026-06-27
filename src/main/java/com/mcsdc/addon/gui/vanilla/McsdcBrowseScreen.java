@@ -1,7 +1,7 @@
 package com.mcsdc.addon.gui.vanilla;
 
 import com.google.gson.JsonObject;
-import com.mcsdc.addon.Api;
+import com.mcsdc.addon.McsdcHttp;
 import com.mcsdc.addon.Main;
 import com.mcsdc.addon.ServerListHelper;
 import com.mcsdc.addon.system.MOTD;
@@ -115,9 +115,9 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
             ServerSearchBuilder.Search search = new ServerSearchBuilder.Search(
                 new ServerSearchBuilder.Version(ver), flags, extra
             );
-            JsonObject json = ServerSearchBuilder.createFilter(search);
+            JsonObject json = ServerSearchBuilder.createJson(search);
             Main.LOG.info(json.toString());
-            return Api.postJson("/search/filter", json);
+            return McsdcHttp.post(json);
         }).thenAccept(response -> minecraft.execute(() -> {
             searching = false;
             if (response == null) {
@@ -130,7 +130,7 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
                 return;
             }
             List<ServerStorage> results = new ArrayList<>(parsed.serversOrEmpty());
-            if (submittedSearch.hideOffline) results.removeIf(ServerStorage::isStale);
+            if (submittedSearch.hideOffline) results.removeIf(s -> s.isStale());
             state.results = results;
             if (results.isEmpty()) {
                 state.statusMessage = "No servers found.";
@@ -165,7 +165,7 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
 
     private void addAll() {
         if (state.results.isEmpty()) return;
-        ServerListHelper.addAllMcsdcServers(state.results.stream().map(ServerStorage::ip).toList());
+        ServerListHelper.addAllMcsdcServers(state.results.stream().map(s -> s.ip()).toList());
         state.statusMessage = "Added all servers.";
     }
 

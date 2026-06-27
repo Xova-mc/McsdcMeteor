@@ -3,7 +3,8 @@ package com.mcsdc.addon.gui;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mcsdc.addon.Api;
+import com.google.gson.JsonParser;
+import com.mcsdc.addon.McsdcHttp;
 import com.mcsdc.addon.util.TicketIDGenerator;
 import meteordevelopment.meteorclient.gui.GuiThemes;
 import meteordevelopment.meteorclient.gui.WindowScreen;
@@ -34,18 +35,20 @@ public class ServerInfoScreen extends WindowScreen {
 
     @Override
     public void initWidgets() {
-        CompletableFuture.supplyAsync(() -> {
-            String response = Api.postJson("/search/query", Api.addressBody(this.ip));
-            if (response == null || response.isEmpty()) return null;
-            JsonObject server = Api.normalizeServer(Api.unwrapObject(response));
-            return server.has("error") ? null : server;
-        }).thenAccept(jsonObject -> {
-            if (jsonObject == null) {
+        CompletableFuture.supplyAsync(() -> McsdcHttp.postAddressQuery(this.ip)).thenAccept(response -> {
+            if (response == null || response.isEmpty()) {
                 mc.execute(() -> add(theme.label("Not Valid")));
                 return;
             }
 
             mc.execute(() -> {
+                JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
+
+                if (jsonObject.has("error")) {
+                    add(theme.label("Not Valid"));
+                    return;
+                }
+
                 WTable table = add(theme.table()).widget();
 
                 table.add(theme.horizontalSeparator("Info")).expandX().widget();
