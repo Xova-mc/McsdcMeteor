@@ -29,7 +29,7 @@ public final class FilterWidgets {
     }
 
     public static Button cycleFlag(String name, SearchFlag initial, Consumer<SearchFlag> onChange, int x, int y, int width) {
-        return cycle(name, initial, SearchFlag::next, SearchFlag::label, onChange, x, y, width);
+        return cycle(name, initial, flag -> flag.next(), flag -> flag.label(), onChange, x, y, width);
     }
 
     public static Button toggle(String name, boolean initial, Consumer<Boolean> onChange, int x, int y, int width) {
