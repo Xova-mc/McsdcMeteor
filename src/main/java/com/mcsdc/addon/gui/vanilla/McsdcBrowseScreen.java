@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class McsdcBrowseScreen extends McsdcParentScreen {
     private final BrowseSearchState state = BrowseSearchState.LAST;
@@ -92,7 +91,7 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
         state.statusMessage = "Searching...";
         BrowseSearchState submittedSearch = state.copy();
 
-        CompletableFuture.supplyAsync(() -> {
+        GuiAsync.run(minecraft, () -> {
             Object ver = state.resolveVersion();
             if (ver instanceof String s && s.isEmpty()) return null;
 
@@ -118,7 +117,7 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
             JsonObject json = ServerSearchBuilder.createJson(search);
             Main.LOG.info(json.toString());
             return McsdcHttp.post(json);
-        }).thenAccept(response -> minecraft.execute(() -> {
+        }, response -> {
             searching = false;
             if (response == null) {
                 rememberSearch(submittedSearch, "Enter a version string.");
@@ -143,16 +142,11 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
             submittedSearch.results = new ArrayList<>(results);
             rememberSearch(submittedSearch, state.statusMessage);
             updateActionButtons();
-        })).exceptionally(ex -> {
-            Main.LOG.error("Failed to search", ex);
-            minecraft.execute(() -> {
-                searching = false;
-                Throwable root = ex.getCause() != null ? ex.getCause() : ex;
-                String msg = root.getMessage();
-                state.statusMessage = "Error: " + (msg != null ? msg : "Unknown error");
-                updateActionButtons();
-            });
-            return null;
+        }, err -> {
+            Main.LOG.error("Failed to search: {}", err);
+            searching = false;
+            state.statusMessage = "Error: " + err;
+            updateActionButtons();
         });
     }
 

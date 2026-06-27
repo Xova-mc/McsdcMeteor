@@ -13,7 +13,6 @@ import net.minecraft.util.CommonColors;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class McsdcFindPlayerScreen extends McsdcParentScreen {
     private EditBox playerField;
@@ -72,13 +71,13 @@ public class McsdcFindPlayerScreen extends McsdcParentScreen {
         }
         searching = true;
         status = "Searching...";
-        CompletableFuture.supplyAsync(() -> {
+        GuiAsync.run(minecraft, () -> {
             JsonObject search = new JsonObject();
             search.addProperty("player", query);
             JsonObject body = new JsonObject();
             body.add("search", search);
             return McsdcHttp.post(body);
-        }).thenAccept(response -> minecraft.execute(() -> {
+        }, response -> {
             searching = false;
             ServerSearchResults.ParseResult parsed = ServerSearchResults.parse(response);
             if (!parsed.ok()) {
@@ -89,14 +88,10 @@ public class McsdcFindPlayerScreen extends McsdcParentScreen {
             status = ServerSearchResults.statusFor(results);
             serverList.setServers(results);
             updateButtons();
-        })).exceptionally(ex -> {
-            minecraft.execute(() -> {
-                searching = false;
-                Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-                status = "Error: " + (cause.getMessage() != null ? cause.getMessage() : "Unknown error");
-                updateButtons();
-            });
-            return null;
+        }, err -> {
+            searching = false;
+            status = "Error: " + err;
+            updateButtons();
         });
     }
 

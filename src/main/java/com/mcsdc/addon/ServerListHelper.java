@@ -57,7 +57,11 @@ public final class ServerListHelper {
         return info.name.startsWith(MCSdc_PREFIX);
     }
 
-    private static ServerData mcsdcServer(String ip) {
+    public static ServerData serverData(String ip) {
         return new ServerData(MCSdc_PREFIX + " " + ip, ip, ServerData.Type.OTHER);
+    }
+
+    private static ServerData mcsdcServer(String ip) {
+        return serverData(ip);
     }
 }

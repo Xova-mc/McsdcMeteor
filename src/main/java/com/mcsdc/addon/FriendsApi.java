@@ -70,7 +70,7 @@ public final class FriendsApi {
     }
 
     private static JsonResult parseResponse(@Nullable HttpResponse<String> response) {
-        if (response == null) return new JsonResult(null, "no response");
+        if (response == null) return new JsonResult(null, "No response.");
 
         String body = response.body();
         String err = errorFrom(body);
@@ -91,7 +91,7 @@ public final class FriendsApi {
 
     @Nullable
     public static String errorFrom(@Nullable String body) {
-        if (body == null || body.isBlank()) return "no response";
+        if (body == null || body.isBlank()) return "No response.";
         try {
             JsonElement parsed = JsonParser.parseString(body);
             if (parsed.isJsonObject()) return errorFrom(parsed.getAsJsonObject());

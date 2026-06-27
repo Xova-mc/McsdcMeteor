@@ -15,7 +15,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class McsdcFriendsScreen extends McsdcParentScreen {
     private boolean locationsTab;
@@ -86,24 +85,19 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
             status = "Loading...";
             tab.loading = true;
             String path = locationsTab ? "/my/friends/locations" : "/my/friends";
-            CompletableFuture.supplyAsync(() -> FriendsApi.requestGet(path))
-                .thenAccept(r -> minecraft.execute(() -> {
-                    if (r.ok()) tab.ok(FriendsApi.unwrapArray(r.body()));
-                    else tab.fail(r.error());
-                    if (tab != activeTab()) return;
-                    status = tab.error.isEmpty() ? "" : tab.error;
-                    populateList();
-                    updateActionBtn();
-                }))
-                .exceptionally(e -> {
-                    minecraft.execute(() -> {
-                        tab.fail(e.getMessage());
-                        if (tab != activeTab()) return;
-                        status = tab.error;
-                        populateList();
-                    });
-                    return null;
-                });
+            GuiAsync.run(minecraft, () -> FriendsApi.requestGet(path), r -> {
+                if (r.ok()) tab.ok(FriendsApi.unwrapArray(r.body()));
+                else tab.fail(r.error());
+                if (tab != activeTab()) return;
+                status = tab.error.isEmpty() ? "" : tab.error;
+                populateList();
+                updateActionBtn();
+            }, err -> {
+                tab.fail(err);
+                if (tab != activeTab()) return;
+                status = tab.error;
+                populateList();
+            });
         } else if (tab.loaded) {
             populateList();
         }
@@ -149,26 +143,19 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
         busy = "add";
         JsonObject body = new JsonObject();
         body.addProperty("name", name);
-        CompletableFuture.supplyAsync(() -> FriendsApi.requestPost("/my/friends", body))
-            .thenAccept(r -> minecraft.execute(() -> {
-                busy = null;
-                if (!r.ok()) status = r.error();
-                else {
-                    nameField.setValue("");
-                    list.invalidate();
-                    rebuildUi();
-                }
-            }))
-            .exceptionally(e -> {
-                minecraft.execute(() -> {
-                    busy = null;
-                    Throwable cause = e.getCause() != null ? e.getCause() : e;
-                    String msg = cause.getMessage();
-                    status = msg != null && !msg.isBlank() ? msg : "request failed";
-                    updateActionBtn();
-                });
-                return null;
-            });
+        GuiAsync.run(minecraft, () -> FriendsApi.requestPost("/my/friends", body), r -> {
+            busy = null;
+            if (!r.ok()) status = r.error();
+            else {
+                nameField.setValue("");
+                list.invalidate();
+                rebuildUi();
+            }
+        }, err -> {
+            busy = null;
+            status = err;
+            updateActionBtn();
+        });
     }
 
     private void runAction() {
@@ -185,25 +172,18 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
         busy = name;
         JsonObject body = new JsonObject();
         body.addProperty("name", name);
-        CompletableFuture.supplyAsync(() -> FriendsApi.requestPost("/my/friends/deny", body))
-            .thenAccept(r -> minecraft.execute(() -> {
-                busy = null;
-                if (!r.ok()) status = r.error();
-                else {
-                    list.invalidate();
-                    rebuildUi();
-                }
-            }))
-            .exceptionally(e -> {
-                minecraft.execute(() -> {
-                    busy = null;
-                    Throwable cause = e.getCause() != null ? e.getCause() : e;
-                    String msg = cause.getMessage();
-                    status = msg != null && !msg.isBlank() ? msg : "request failed";
-                    updateActionBtn();
-                });
-                return null;
-            });
+        GuiAsync.run(minecraft, () -> FriendsApi.requestPost("/my/friends/deny", body), r -> {
+            busy = null;
+            if (!r.ok()) status = r.error();
+            else {
+                list.invalidate();
+                rebuildUi();
+            }
+        }, err -> {
+            busy = null;
+            status = err;
+            updateActionBtn();
+        });
     }
 
     private void join(String address) {

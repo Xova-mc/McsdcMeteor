@@ -5,17 +5,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mcsdc.addon.McsdcHttp;
+import com.mcsdc.addon.ServerListHelper;
+import com.mcsdc.addon.gui.vanilla.VanillaScreens;
 import com.mcsdc.addon.util.TicketIDGenerator;
 import meteordevelopment.meteorclient.gui.GuiThemes;
 import meteordevelopment.meteorclient.gui.WindowScreen;
 import meteordevelopment.meteorclient.gui.widgets.containers.WTable;
 import meteordevelopment.meteorclient.systems.accounts.types.CrackedAccount;
-import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.gui.screens.ConnectScreen;
-import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
-import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.client.multiplayer.ServerData;
-import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -170,21 +167,15 @@ public class ServerInfoScreen extends WindowScreen {
                         if (mc.level == null) {
                             accounts.add(theme.button("Login & join")).expandX().widget().action = () -> {
                                 new CrackedAccount(info.name).login();
-
-                                ServerData serverInfo = new ServerData("Mcsdc " + this.ip, this.ip, ServerData.Type.OTHER);
-                                ConnectScreen.startConnecting(new JoinMultiplayerScreen(new TitleScreen()), mc,
-                                        ServerAddress.parseString(serverInfo.ip), serverInfo, false, null);
+                                VanillaScreens.connectTo(mc, this.ip);
                             };
                         } else {
                             accounts.add(theme.button("Login & rejoin")).expandX().widget().action = () -> {
                                 new CrackedAccount(info.name).login();
-
                                 ServerData serverInfo = mc.getConnection() != null && mc.getConnection().getServerData() != null
                                     ? mc.getConnection().getServerData()
-                                    : new ServerData("Mcsdc " + this.ip, this.ip, ServerData.Type.OTHER);
-                                mc.disconnectFromWorld(Component.literal(""));
-                                ConnectScreen.startConnecting(new JoinMultiplayerScreen(new TitleScreen()), mc,
-                                        ServerAddress.parseString(serverInfo.ip), serverInfo, false, null);
+                                    : ServerListHelper.serverData(this.ip);
+                                VanillaScreens.connectFromWorld(mc, serverInfo);
                             };
                         }
 
