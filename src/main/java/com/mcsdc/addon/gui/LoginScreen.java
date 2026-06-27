@@ -35,14 +35,11 @@ public class LoginScreen extends WindowScreen {
         super(GuiThemes.get(), "Login with Token");
         this.parent = parent;
     }
-    WContainer settingsContainer;
 
     @Override
     public void initWidgets() {
         WContainer settingsContainer = add(theme.verticalList()).expandX().widget();
         settingsContainer.add(theme.settings(settings)).expandX();
-
-        this.settingsContainer = settingsContainer;
 
         add(theme.button("Submit")).expandX().widget().action = () -> {
             reload();

@@ -46,10 +46,6 @@ public class McsdcSystem extends System<McsdcSystem> {
         this.username = username;
     }
 
-    public int getLevel() {
-        return level;
-    }
-
     public void setLevel(int level) {
         this.level = level;
     }

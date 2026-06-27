@@ -32,6 +32,11 @@ public final class FriendsApi {
         return Main.friendsApiBase + (path.startsWith("/") ? path : "/" + path);
     }
 
+    private static void applyAuth(HttpRequest.Builder req) {
+        String token = McsdcSystem.get().getToken();
+        if (!token.isEmpty()) req.header("Authorization", "Bearer " + token);
+    }
+
     private static Http.Request withAuth(Http.Request req) {
         String token = McsdcSystem.get().getToken();
         if (!token.isEmpty()) req.header("Authorization", "Bearer " + token);
@@ -58,8 +63,7 @@ public final class FriendsApi {
 
     public static void delete(String path) {
         HttpRequest.Builder req = HttpRequest.newBuilder().uri(URI.create(url(path))).DELETE();
-        String token = McsdcSystem.get().getToken();
-        if (!token.isEmpty()) req.header("Authorization", "Bearer " + token);
+        applyAuth(req);
         try {
             HTTP.send(req.build(), HttpResponse.BodyHandlers.discarding());
         } catch (Exception ignored) {}

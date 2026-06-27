@@ -159,7 +159,7 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
     private void addSelected() {
         ServerStorage s = serverList.getSelectedServer();
         if (s == null) return;
-        ServerListHelper.addMcsdcServer(s.ip());
+        ServerListActions.add(serverList);
         state.statusMessage = "Added " + s.ip();
     }
 

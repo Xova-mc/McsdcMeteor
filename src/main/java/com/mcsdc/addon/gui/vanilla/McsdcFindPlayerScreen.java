@@ -3,7 +3,6 @@ package com.mcsdc.addon.gui.vanilla;
 import com.google.gson.JsonObject;
 import com.mcsdc.addon.McsdcHttp;
 import com.mcsdc.addon.ServerListHelper;
-import com.mcsdc.addon.system.FindPlayerSearchBuilder;
 import com.mcsdc.addon.system.ServerStorage;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -74,7 +73,10 @@ public class McsdcFindPlayerScreen extends McsdcParentScreen {
         searching = true;
         status = "Searching...";
         CompletableFuture.supplyAsync(() -> {
-            JsonObject body = FindPlayerSearchBuilder.create(query);
+            JsonObject search = new JsonObject();
+            search.addProperty("player", query);
+            JsonObject body = new JsonObject();
+            body.add("search", search);
             return McsdcHttp.post(body);
         }).thenAccept(response -> minecraft.execute(() -> {
             searching = false;
