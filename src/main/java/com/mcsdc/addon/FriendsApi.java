@@ -3,6 +3,7 @@ package com.mcsdc.addon;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mcsdc.addon.gui.vanilla.GuiAsync;
 import com.mcsdc.addon.system.McsdcSystem;
 import meteordevelopment.meteorclient.utils.network.Http;
 import org.jetbrains.annotations.Nullable;
@@ -29,14 +30,20 @@ public final class FriendsApi {
         return Main.friendsApiBase + (path.startsWith("/") ? path : "/" + path);
     }
 
-    private static void applyAuth(HttpRequest.Builder req) {
+    @Nullable
+    private static String bearerHeader() {
         String token = McsdcSystem.get().getToken();
-        if (!token.isEmpty()) req.header("Authorization", "Bearer " + token);
+        return token.isEmpty() ? null : "Bearer " + token;
+    }
+
+    private static void applyAuth(HttpRequest.Builder req) {
+        String auth = bearerHeader();
+        if (auth != null) req.header("Authorization", auth);
     }
 
     private static Http.Request withAuth(Http.Request req) {
-        String token = McsdcSystem.get().getToken();
-        if (!token.isEmpty()) req.header("Authorization", "Bearer " + token);
+        String auth = bearerHeader();
+        if (auth != null) req.header("Authorization", auth);
         return req;
     }
 

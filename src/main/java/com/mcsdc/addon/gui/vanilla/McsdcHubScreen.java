@@ -50,7 +50,6 @@ public class McsdcHubScreen extends McsdcParentScreen {
         addRenderableWidget(Button.builder(Component.literal("Logout"), b -> {
             McsdcSystem.get().setToken("");
             McsdcSystem.get().setUsername("");
-            McsdcSystem.get().setLevel(-1);
             minecraft.setScreen(new LoginScreen(parent));
         }).bounds(cx - bw / 2 - 52, footerY, 98, UiLayout.BUTTON_HEIGHT).build());
 

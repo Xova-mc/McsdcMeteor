@@ -15,7 +15,6 @@ public class McsdcSystem extends System<McsdcSystem> {
 
     private String token = "";
     private String username = "";
-    private int level = -1;
     private String lastServer = "";
     private final List<ServerStorage> serverQueue = new ArrayList<>();
     private int currentServerIndex = 0;
@@ -44,10 +43,6 @@ public class McsdcSystem extends System<McsdcSystem> {
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    public void setLevel(int level) {
-        this.level = level;
     }
 
     public List<ServerStorage> getRecentServers() {
@@ -112,7 +107,6 @@ public class McsdcSystem extends System<McsdcSystem> {
         CompoundTag compound = new CompoundTag();
         compound.putString("token", this.token);
         compound.putString("username", this.username);
-        compound.putInt("level", this.level);
 
         ListTag list = new ListTag();
 
@@ -144,7 +138,6 @@ public class McsdcSystem extends System<McsdcSystem> {
     public McsdcSystem fromTag(CompoundTag tag) {
         this.token = tag.getString("token").orElse("");
         this.username = tag.getString("username").orElse("");
-        this.level = tag.getInt("level").orElse(-1);
 
         ListTag list = tag.getList("recent").orElse(new ListTag());
         List<ServerStorage> tempList = new ArrayList<>();

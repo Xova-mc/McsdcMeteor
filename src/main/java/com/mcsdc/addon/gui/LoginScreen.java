@@ -14,7 +14,6 @@ import meteordevelopment.meteorclient.settings.Settings;
 import meteordevelopment.meteorclient.settings.StringSetting;
 import net.minecraft.client.gui.screens.Screen;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static meteordevelopment.meteorclient.MeteorClient.mc;
@@ -59,7 +58,7 @@ public class LoginScreen extends WindowScreen {
                 if (jsonObject.has("error")) return null;
 
                 JsonObject data = jsonObject.getAsJsonObject("data");
-                return Map.entry(data.get("name").getAsString(), data.get("perms").getAsInt());
+                return data.get("name").getAsString();
             }).thenAccept(response -> {
                 mc.execute(() -> {
                     if (response == null) {
@@ -68,8 +67,7 @@ public class LoginScreen extends WindowScreen {
                     }
 
                     McsdcSystem.get().setToken(tokenSetting.get());
-                    McsdcSystem.get().setUsername(response.getKey());
-                    McsdcSystem.get().setLevel(response.getValue());
+                    McsdcSystem.get().setUsername(response);
 
                     mc.setScreen(new McsdcHubScreen(parent));
                 });
