@@ -1,6 +1,6 @@
 package com.mcsdc.addon.mixin;
 
-import com.mcsdc.addon.gui.McsdcScreen;
+import com.mcsdc.addon.gui.vanilla.McsdcHubScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.components.Button;
@@ -21,7 +21,7 @@ public abstract class TitleScreenMixin extends Screen {
         this.addRenderableWidget(
             Button.builder(Component.literal("MCSDC"), btn -> {
                 if (this.minecraft == null) return;
-                McsdcScreen.open((Screen) (Object) this);
+                this.minecraft.setScreen(new McsdcHubScreen((Screen) (Object) this));
             }).bounds(this.width / 2 - 100, mcsdcY, 200, 20).build()
         );
         return mcsdcY;

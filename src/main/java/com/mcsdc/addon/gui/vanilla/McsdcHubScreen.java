@@ -1,6 +1,7 @@
 package com.mcsdc.addon.gui.vanilla;
 
 import com.mcsdc.addon.ServerListHelper;
+import com.mcsdc.addon.gui.LoginScreen;
 import com.mcsdc.addon.system.McsdcSystem;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,7 +17,7 @@ public class McsdcHubScreen extends McsdcParentScreen {
     @Override
     protected void init() {
         if (McsdcSystem.get().getToken().isEmpty()) {
-            minecraft.setScreen(new LoginBridgeScreen(parent));
+            minecraft.setScreen(new LoginScreen(parent));
             return;
         }
 
@@ -50,7 +51,7 @@ public class McsdcHubScreen extends McsdcParentScreen {
             McsdcSystem.get().setToken("");
             McsdcSystem.get().setUsername("");
             McsdcSystem.get().setLevel(-1);
-            minecraft.setScreen(new LoginBridgeScreen(parent));
+            minecraft.setScreen(new LoginScreen(parent));
         }).bounds(cx - bw / 2 - 52, footerY, 98, UiLayout.BUTTON_HEIGHT).build());
 
         addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose())
