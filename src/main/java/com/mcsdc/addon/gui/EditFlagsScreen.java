@@ -10,8 +10,6 @@ import meteordevelopment.meteorclient.settings.*;
 
 import java.util.concurrent.CompletableFuture;
 
-import static meteordevelopment.meteorclient.MeteorClient.mc;
-
 public class EditFlagsScreen extends WindowScreen {
 
     private final String ip;

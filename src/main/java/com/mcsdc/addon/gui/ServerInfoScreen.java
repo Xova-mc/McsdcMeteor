@@ -2,7 +2,6 @@ package com.mcsdc.addon.gui;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.mcsdc.addon.AddressQuery;
 import com.mcsdc.addon.ServerListHelper;
 import com.mcsdc.addon.gui.vanilla.VanillaScreens;

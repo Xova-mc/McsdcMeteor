@@ -3,7 +3,6 @@ package com.mcsdc.addon;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.mcsdc.addon.gui.vanilla.GuiAsync;
 import com.mcsdc.addon.system.McsdcSystem;
 import meteordevelopment.meteorclient.utils.network.Http;
 import org.jetbrains.annotations.Nullable;
