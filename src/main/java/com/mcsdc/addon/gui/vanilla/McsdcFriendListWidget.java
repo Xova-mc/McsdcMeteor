@@ -20,15 +20,21 @@ public class McsdcFriendListWidget extends AbstractWidget {
     private List<Row> rows = List.of();
     private int selected = -1;
     private double scrollY;
+    @Nullable private Runnable onSelectionChanged;
 
     public McsdcFriendListWidget(int x, int y, int width, int height) {
         super(x, y, width, height, Component.empty());
+    }
+
+    public void setOnSelectionChanged(@Nullable Runnable onSelectionChanged) {
+        this.onSelectionChanged = onSelectionChanged;
     }
 
     public void setRows(List<Row> rows) {
         this.rows = List.copyOf(rows);
         this.selected = -1;
         this.scrollY = 0;
+        notifySelectionChanged();
     }
 
     @Nullable
@@ -89,9 +95,14 @@ public class McsdcFriendListWidget extends AbstractWidget {
         int idx = ((int) event.y() - getY() + (int) scrollY) / ROW_HEIGHT;
         if (idx >= 0 && idx < rows.size()) {
             selected = idx;
+            notifySelectionChanged();
             return true;
         }
         return false;
+    }
+
+    private void notifySelectionChanged() {
+        if (onSelectionChanged != null) onSelectionChanged.run();
     }
 
     @Override

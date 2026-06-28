@@ -1,5 +1,6 @@
 package com.mcsdc.addon;
 
+import com.mcsdc.addon.mixin.MultiplayerScreenAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.multiplayer.ServerData;
@@ -42,7 +43,8 @@ public final class ServerListHelper {
         list.save();
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof JoinMultiplayerScreen mp) {
-            MultiplayerScreenUtils.reload(mp);
+            MultiplayerScreenAccessor accessor = (MultiplayerScreenAccessor) mp;
+            accessor.getServerSelectionList().updateOnlineServers(mp.getServers());
         }
     }
 
@@ -57,7 +59,11 @@ public final class ServerListHelper {
         return info.name.startsWith(MCSdc_PREFIX);
     }
 
-    private static ServerData mcsdcServer(String ip) {
+    public static ServerData serverData(String ip) {
         return new ServerData(MCSdc_PREFIX + " " + ip, ip, ServerData.Type.OTHER);
+    }
+
+    private static ServerData mcsdcServer(String ip) {
+        return serverData(ip);
     }
 }

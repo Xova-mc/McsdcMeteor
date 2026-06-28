@@ -1,17 +1,12 @@
 package com.mcsdc.addon.mixin;
 
 import com.mcsdc.addon.gui.EditFlagsScreen;
+import com.mcsdc.addon.gui.vanilla.VanillaScreens;
 import com.mcsdc.addon.system.McsdcSystem;
-import com.mcsdc.addon.system.ServerStorage;
 import com.mcsdc.addon.util.TicketIDGenerator;
 import net.minecraft.client.gui.screens.DisconnectedScreen;
-import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.gui.screens.ConnectScreen;
-import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.layouts.LinearLayout;
-import net.minecraft.client.multiplayer.resolver.ServerAddress;
-import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
 import org.spongepowered.asm.mixin.Final;
@@ -40,17 +35,9 @@ public class DisconnectedScreenMixin {
         }
 
         if (system.hasServerQueue()) {
-            layout.addChild(new Button.Builder(Component.literal("Next Server").withStyle(ChatFormatting.AQUA), button -> {
-                ServerStorage nextServer = system.getNextServer();
-                if (nextServer != null) {
-                    String nextIp = nextServer.ip();
-                    ConnectScreen.startConnecting(new JoinMultiplayerScreen(new TitleScreen()), mc,
-                        ServerAddress.parseString(nextIp), new ServerData("", nextIp, ServerData.Type.OTHER), false, null);
-                } else {
-                    mc.gui.setOverlayMessage(Component.literal("No more servers left."), false);
-                    mc.setScreen(new TitleScreen());
-                }
-            }).build());
+            layout.addChild(new Button.Builder(Component.literal("Next Server").withStyle(ChatFormatting.AQUA), button ->
+                VanillaScreens.connectNext(system, mc, false)
+            ).build());
         }
     }
 

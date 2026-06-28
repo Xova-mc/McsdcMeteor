@@ -1,6 +1,6 @@
 package com.mcsdc.addon.mixin;
 
-import com.mcsdc.addon.gui.McsdcScreen;
+import com.mcsdc.addon.gui.vanilla.McsdcHubScreen;
 import com.mcsdc.addon.gui.ServerInfoScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
@@ -30,7 +30,7 @@ public abstract class MultiplayerScreenMixin extends Screen {
                 Component.literal("MCSDC"),
                 onPress -> {
                     if (this.minecraft == null) return;
-                    McsdcScreen.open((Screen) (Object) this);
+                    this.minecraft.setScreen(new McsdcHubScreen((Screen) (Object) this));
                 }
             )
                 .pos(150, 3)

@@ -3,7 +3,6 @@ package com.mcsdc.addon.system;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -15,10 +14,6 @@ public record ServerStorage(String ip, String version, @Nullable Long lastScanne
     public boolean isStale() {
         if (lastScanned == null || lastSeen == null) return false;
         return lastScanned - lastSeen > STALE_MS;
-    }
-
-    public static List<ServerStorage> fromJsonArray(String jsonResponse) {
-        return fromJsonArray(JsonParser.parseString(jsonResponse).getAsJsonArray());
     }
 
     public static List<ServerStorage> fromJsonArray(JsonArray array) {

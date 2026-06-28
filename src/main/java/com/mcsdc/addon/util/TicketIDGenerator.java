@@ -1,56 +1,18 @@
 package com.mcsdc.addon.util;
 
+import org.jetbrains.annotations.Nullable;
+
 public class TicketIDGenerator {
 
     private static final int DEFAULT_PORT = 25565;
 
+    private record ParsedIp(long value, int port) {}
+
     public static String generateTicketID(String ipAndPort) {
-        if (ipAndPort == null || ipAndPort.isEmpty()) {
-            return "";
-        }
-
-        try {
-
-        String ip;
-        int port = DEFAULT_PORT;
-
-        String[] parts = ipAndPort.split(":");
-        if (parts.length == 2) {
-            ip = parts[0];
-            try {
-                port = Integer.parseInt(parts[1]);
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid port number: " + parts[1]);
-            }
-            if (port < 0 || port > 65535) {
-                throw new IllegalArgumentException("Port out of range: " + port);
-            }
-        } else if (parts.length == 1) {
-            ip = parts[0];
-        } else {
-            throw new IllegalArgumentException("Invalid format: must be IP or IP:port");
-        }
-
-        String[] ipParts = ip.split("\\.");
-        if (ipParts.length != 4) {
-            throw new IllegalArgumentException("Invalid IPv4 address: " + ip);
-        }
-
-        long ipValue = 0;
-        for (String segment : ipParts) {
-            int byteVal = Integer.parseInt(segment);
-            if (byteVal < 0 || byteVal > 255) {
-                throw new IllegalArgumentException("Invalid byte in IP: " + segment);
-            }
-            ipValue = (ipValue << 8) | byteVal;
-        }
-
-        long combined = (ipValue << 16) | (port & 0xFFFF);
-
+        ParsedIp parsed = parse(ipAndPort, false);
+        if (parsed == null) return "";
+        long combined = (parsed.value() << 16) | (parsed.port() & 0xFFFFL);
         return Long.toString(combined, 36).toUpperCase();
-        } catch (Exception e) {
-            return "";
-        }
     }
 
     public static String decodeTicketID(String ticketID) {
@@ -63,54 +25,67 @@ public class TicketIDGenerator {
         for (int i = 3; i >= 0; i--) {
             long byteVal = (ipValue >> (8 * i)) & 0xFF;
             ip.append(byteVal);
-            if (i > 0) {
-                ip.append('.');
-            }
+            if (i > 0) ip.append('.');
         }
 
         return ip + ":" + port;
     }
 
     public static boolean isValidIPv4WithPort(String ipAndPort) {
-        if (ipAndPort == null || ipAndPort.isEmpty()) {
-            return false;
-        }
+        return parse(ipAndPort, true) != null;
+    }
+
+    @Nullable
+    private static ParsedIp parse(String ipAndPort, boolean requirePort) {
+        if (ipAndPort == null || ipAndPort.isEmpty()) return null;
 
         String[] parts = ipAndPort.split(":");
-        if (parts.length != 2) {
-            return false;
-        }
+        if (requirePort ? parts.length != 2 : parts.length > 2) return null;
 
-        String ip = parts[0];
-        String portStr = parts[1];
-
-        int port;
-        try {
-            port = Integer.parseInt(portStr);
-        } catch (NumberFormatException e) {
-            return false;
-        }
-        if (port < 0 || port > 65535) {
-            return false;
+        String ip;
+        int port = DEFAULT_PORT;
+        if (parts.length == 2) {
+            ip = parts[0];
+            try {
+                port = Integer.parseInt(parts[1]);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+            if (port < 0 || port > 65535) return null;
+        } else if (parts.length == 1) {
+            ip = parts[0];
+        } else {
+            return null;
         }
 
         String[] ipParts = ip.split("\\.");
-        if (ipParts.length != 4) {
-            return false;
-        }
+        if (ipParts.length != 4) return null;
 
+        long ipValue = 0;
         for (String segment : ipParts) {
             try {
                 int byteVal = Integer.parseInt(segment);
-                if (byteVal < 0 || byteVal > 255) {
-                    return false;
-                }
+                if (byteVal < 0 || byteVal > 255) return null;
+                ipValue = (ipValue << 8) | byteVal;
             } catch (NumberFormatException e) {
-                return false;
+                return null;
             }
         }
 
-        return true;
+        return new ParsedIp(ipValue, port);
+    }
+
+    static void selfCheck() {
+        String sample = "192.168.1.1:25565";
+        String ticket = generateTicketID(sample);
+        assert !ticket.isEmpty() : "encode failed";
+        assert sample.equals(decodeTicketID(ticket)) : "round-trip failed";
+        assert isValidIPv4WithPort(sample);
+        assert !isValidIPv4WithPort("192.168.1.1");
+        assert generateTicketID("not-an-ip").isEmpty();
+    }
+
+    public static void main(String[] args) {
+        selfCheck();
     }
 }
-

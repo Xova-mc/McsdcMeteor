@@ -1,6 +1,5 @@
 package com.mcsdc.addon;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -16,8 +15,6 @@ import java.util.concurrent.Executors;
 
 // so, friends/location stay on api2, but separate from v1 sqlite search
 public final class FriendsApi {
-    private static final String[] ARRAY_KEYS = { "data", "servers", "results", "rows", "list", "items" };
-
     private static final HttpClient HTTP = HttpClient.newBuilder()
         .executor(Executors.newVirtualThreadPerTaskExecutor())
         .build();
@@ -32,9 +29,20 @@ public final class FriendsApi {
         return Main.friendsApiBase + (path.startsWith("/") ? path : "/" + path);
     }
 
-    private static Http.Request withAuth(Http.Request req) {
+    @Nullable
+    private static String bearerHeader() {
         String token = McsdcSystem.get().getToken();
-        if (!token.isEmpty()) req.header("Authorization", "Bearer " + token);
+        return token.isEmpty() ? null : "Bearer " + token;
+    }
+
+    private static void applyAuth(HttpRequest.Builder req) {
+        String auth = bearerHeader();
+        if (auth != null) req.header("Authorization", auth);
+    }
+
+    private static Http.Request withAuth(Http.Request req) {
+        String auth = bearerHeader();
+        if (auth != null) req.header("Authorization", auth);
         return req;
     }
 
@@ -58,15 +66,14 @@ public final class FriendsApi {
 
     public static void delete(String path) {
         HttpRequest.Builder req = HttpRequest.newBuilder().uri(URI.create(url(path))).DELETE();
-        String token = McsdcSystem.get().getToken();
-        if (!token.isEmpty()) req.header("Authorization", "Bearer " + token);
+        applyAuth(req);
         try {
             HTTP.send(req.build(), HttpResponse.BodyHandlers.discarding());
         } catch (Exception ignored) {}
     }
 
     private static JsonResult parseResponse(@Nullable HttpResponse<String> response) {
-        if (response == null) return new JsonResult(null, "no response");
+        if (response == null) return new JsonResult(null, "No response.");
 
         String body = response.body();
         String err = errorFrom(body);
@@ -87,7 +94,7 @@ public final class FriendsApi {
 
     @Nullable
     public static String errorFrom(@Nullable String body) {
-        if (body == null || body.isBlank()) return "no response";
+        if (body == null || body.isBlank()) return "No response.";
         try {
             JsonElement parsed = JsonParser.parseString(body);
             if (parsed.isJsonObject()) return errorFrom(parsed.getAsJsonObject());
@@ -101,17 +108,5 @@ public final class FriendsApi {
 
     public static String jsonString(JsonObject o, String key, String fallback) {
         return o.has(key) && !o.get(key).isJsonNull() ? o.get(key).getAsString() : fallback;
-    }
-
-    public static JsonArray unwrapArray(String body) {
-        JsonElement parsed = JsonParser.parseString(body);
-        if (parsed.isJsonArray()) return parsed.getAsJsonArray();
-        if (!parsed.isJsonObject()) return new JsonArray();
-
-        JsonObject root = parsed.getAsJsonObject();
-        for (String key : ARRAY_KEYS) {
-            if (root.has(key) && root.get(key).isJsonArray()) return root.getAsJsonArray(key);
-        }
-        return new JsonArray();
     }
 }

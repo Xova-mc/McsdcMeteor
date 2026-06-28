@@ -1,12 +1,9 @@
 package com.mcsdc.addon.gui.vanilla;
 
 import com.google.gson.JsonObject;
-import com.mcsdc.addon.McsdcHttp;
 import com.mcsdc.addon.Main;
-import com.mcsdc.addon.ServerListHelper;
-import com.mcsdc.addon.system.MOTD;
+import com.mcsdc.addon.McsdcHttp;
 import com.mcsdc.addon.system.McsdcSystem;
-import com.mcsdc.addon.system.ServerSearchBuilder;
 import com.mcsdc.addon.system.ServerStorage;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,9 +13,7 @@ import net.minecraft.util.CommonColors;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class McsdcBrowseScreen extends McsdcParentScreen {
     private final BrowseSearchState state = BrowseSearchState.LAST;
@@ -68,15 +63,16 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
         addRenderableWidget(Button.builder(Component.literal("Back"), b -> onClose())
             .bounds(back.x(), back.y(), back.width(), UiLayout.BUTTON_HEIGHT).build());
 
-        joinBtn = addRenderableWidget(Button.builder(Component.literal("Join"), b -> ServerListActions.join(serverList)).build());
-        addBtn = addRenderableWidget(Button.builder(Component.literal("Add"), b -> addSelected()).build());
-        infoBtn = addRenderableWidget(Button.builder(Component.literal("Info"), b -> ServerListActions.info(minecraft, serverList)).build());
+        ServerListActions.FooterButtons footer = ServerListActions.createFooter(
+            minecraft, serverList, this::updateActionButtons, this::addSelected);
+        joinBtn = addRenderableWidget(footer.join());
+        addBtn = addRenderableWidget(footer.add());
+        infoBtn = addRenderableWidget(footer.info());
         addAllBtn = addRenderableWidget(Button.builder(Component.literal("Add all"), b -> addAll()).build());
         shuffleBtn = addRenderableWidget(Button.builder(Component.literal("Shuffle"), b -> shuffle()).build());
 
         UiLayout.placeFooterActions(margin, back.x() - margin, footerY, List.of(joinBtn, addBtn, infoBtn, addAllBtn, shuffleBtn));
 
-        serverList.setOnSelectionChanged(this::updateActionButtons);
         if (!state.results.isEmpty()) serverList.setServers(state.results);
         updateActionButtons();
     }
@@ -92,33 +88,12 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
         state.statusMessage = "Searching...";
         BrowseSearchState submittedSearch = state.copy();
 
-        CompletableFuture.supplyAsync(() -> {
-            Object ver = state.resolveVersion();
-            if (ver instanceof String s && s.isEmpty()) return null;
-
-            HashMap<MOTD, Boolean> motds = null;
-            if (state.advancedMotd) {
-                motds = new HashMap<>();
-                motds.put(MOTD.DEFAULT, state.defaultMotd.bool);
-                motds.put(MOTD.COMMUNITY, state.communityMotd.bool);
-                motds.put(MOTD.CREATIVE, state.creativeMotd.bool);
-                motds.put(MOTD.BIGOTRY, state.bigotryMotd.bool);
-                motds.put(MOTD.FURRY, state.furryMotd.bool);
-                motds.put(MOTD.LGBT, state.lgbtMotd.bool);
-            }
-
-            ServerSearchBuilder.Extra extra = new ServerSearchBuilder.Extra(state.hasHistory.bool, state.hasNotes.bool, motds);
-            ServerSearchBuilder.Flags flags = new ServerSearchBuilder.Flags(
-                state.visited.bool, state.griefed.bool, state.modded.bool, state.saved.bool,
-                state.whitelist.bool, state.active.bool, state.cracked.bool
-            );
-            ServerSearchBuilder.Search search = new ServerSearchBuilder.Search(
-                new ServerSearchBuilder.Version(ver), flags, extra
-            );
-            JsonObject json = ServerSearchBuilder.createJson(search);
+        GuiAsync.run(minecraft, () -> {
+            JsonObject json = state.toSearchJson();
+            if (json == null) return null;
             Main.LOG.info(json.toString());
             return McsdcHttp.post(json);
-        }).thenAccept(response -> minecraft.execute(() -> {
+        }, response -> {
             searching = false;
             if (response == null) {
                 rememberSearch(submittedSearch, "Enter a version string.");
@@ -143,30 +118,24 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
             submittedSearch.results = new ArrayList<>(results);
             rememberSearch(submittedSearch, state.statusMessage);
             updateActionButtons();
-        })).exceptionally(ex -> {
-            Main.LOG.error("Failed to search", ex);
-            minecraft.execute(() -> {
-                searching = false;
-                Throwable root = ex.getCause() != null ? ex.getCause() : ex;
-                String msg = root.getMessage();
-                state.statusMessage = "Error: " + (msg != null ? msg : "Unknown error");
-                updateActionButtons();
-            });
-            return null;
+        }, err -> {
+            Main.LOG.error("Failed to search: {}", err);
+            searching = false;
+            state.statusMessage = "Error: " + err;
+            updateActionButtons();
         });
     }
 
     private void addSelected() {
         ServerStorage s = serverList.getSelectedServer();
         if (s == null) return;
-        ServerListHelper.addMcsdcServer(s.ip());
+        ServerListActions.add(serverList);
         state.statusMessage = "Added " + s.ip();
     }
 
     private void addAll() {
-        if (state.results.isEmpty()) return;
-        ServerListHelper.addAllMcsdcServers(state.results.stream().map(s -> s.ip()).toList());
-        state.statusMessage = "Added all servers.";
+        String msg = ServerListActions.addAllMessage(state.results);
+        if (msg != null) state.statusMessage = msg;
     }
 
     private void shuffle() {
@@ -176,34 +145,31 @@ public class McsdcBrowseScreen extends McsdcParentScreen {
     }
 
     private void updateActionButtons() {
-        if (joinBtn == null) return;
         boolean sel = serverList.getSelectedServer() != null;
         ServerListActions.setActive(sel, joinBtn, addBtn, infoBtn);
         boolean hasResults = !state.results.isEmpty();
-        if (addAllBtn != null) addAllBtn.active = hasResults;
-        if (shuffleBtn != null) shuffleBtn.active = hasResults;
+        addAllBtn.active = hasResults;
+        shuffleBtn.active = hasResults;
     }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
         int margin = UiLayout.margin(width);
-        context.centeredText(font, title, width / 2, UiLayout.HEADER_LABEL_Y, CommonColors.WHITE);
+        drawTitle(context);
         if (!state.statusMessage.isEmpty()) {
             context.text(font, state.statusMessage, statusX, statusY, CommonColors.YELLOW, true);
         }
         context.text(font, state.summary(), margin, summaryY, CommonColors.LIGHT_GRAY, true);
 
-        if (serverList != null) {
-            int lx = serverList.getX();
-            int lw = serverList.getWidth();
-            int ly = serverList.getY();
-            int lh = serverList.getHeight();
-            context.text(font, "Address", lx + 4, listHeaderY, CommonColors.GRAY, true);
-            context.text(font, "Version", lx + lw / 2, listHeaderY, CommonColors.GRAY, true);
-            if (state.results.isEmpty() && state.statusMessage.isEmpty()) {
-                context.centeredText(font, "Set filters and hit Search", lx + lw / 2, ly + lh / 2, CommonColors.DARK_GRAY);
-            }
+        int lx = serverList.getX();
+        int lw = serverList.getWidth();
+        int ly = serverList.getY();
+        int lh = serverList.getHeight();
+        context.text(font, "Address", lx + 4, listHeaderY, CommonColors.GRAY, true);
+        context.text(font, "Version", lx + lw / 2, listHeaderY, CommonColors.GRAY, true);
+        if (state.results.isEmpty() && state.statusMessage.isEmpty()) {
+            context.centeredText(font, "Set filters and hit Search", lx + lw / 2, ly + lh / 2, CommonColors.DARK_GRAY);
         }
     }
 

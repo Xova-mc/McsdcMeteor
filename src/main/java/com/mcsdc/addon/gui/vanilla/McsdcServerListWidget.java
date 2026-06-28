@@ -18,9 +18,7 @@ public class McsdcServerListWidget extends AbstractWidget {
 
     private List<ServerStorage> servers = List.of();
     private int selected = -1;
-    private double scrollY;
-    private boolean draggingScrollbar;
-    private double scrollbarDragOffset;
+    private final ScrollMetrics scroll = new ScrollMetrics();
     @Nullable private Runnable onSelectionChanged;
 
     public McsdcServerListWidget(int x, int y, int width, int height) {
@@ -34,8 +32,7 @@ public class McsdcServerListWidget extends AbstractWidget {
     public void setServers(List<ServerStorage> servers) {
         this.servers = List.copyOf(servers);
         this.selected = -1;
-        this.scrollY = 0;
-        this.draggingScrollbar = false;
+        scroll.reset();
         notifySelectionChanged();
     }
 
@@ -51,13 +48,14 @@ public class McsdcServerListWidget extends AbstractWidget {
         int y = getY();
         int w = getWidth();
         int h = getHeight();
+        int contentH = contentHeight();
 
         ctx.fill(x, y, x + w, y + h, 0xC0101010);
         ctx.enableScissor(x, y, x + w, y + h);
 
         var tr = Minecraft.getInstance().font;
         for (int i = 0; i < servers.size(); i++) {
-            int rowY = y + 1 + i * ROW_HEIGHT - (int) scrollY;
+            int rowY = y + 1 + i * ROW_HEIGHT - scroll.scrollY();
             if (rowY + ROW_HEIGHT < y) continue;
             if (rowY > y + h) break;
 
@@ -75,16 +73,7 @@ public class McsdcServerListWidget extends AbstractWidget {
         }
 
         ctx.disableScissor();
-        drawScrollbar(ctx, x, y, w, h);
-    }
-
-    private void drawScrollbar(GuiGraphicsExtractor ctx, int x, int y, int w, int h) {
-        if (!hasScrollbar()) return;
-        int barX = scrollbarX();
-        int thumbH = scrollbarThumbHeight();
-        int thumbY = scrollbarThumbY();
-        ctx.fill(barX, y, barX + 5, y + h, 0x40FFFFFF);
-        ctx.fill(barX, thumbY, barX + 5, thumbY + thumbH, 0xFFFFFFFF);
+        scroll.draw(ctx, x, y, w, h, contentH);
     }
 
     @Override
@@ -92,35 +81,26 @@ public class McsdcServerListWidget extends AbstractWidget {
         if (!active || !visible) return false;
         if (!isMouseOver(event.x(), event.y())) return false;
 
-        if (hasScrollbar() && isMouseOverScrollbar(event.x(), event.y())) {
-            draggingScrollbar = true;
-            scrollbarDragOffset = event.y() - scrollbarThumbY();
-            setScrollFromScrollbarY(event.y() - scrollbarDragOffset);
-            return true;
-        }
-
+        int contentH = contentHeight();
+        if (scroll.startDrag(event.x(), event.y(), getX(), getY(), getWidth(), getHeight(), contentH)) return true;
         if (selectIndex(indexAtClick(event.y()))) return true;
         return false;
     }
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
-        if (!draggingScrollbar) return false;
-        setScrollFromScrollbarY(event.y() - scrollbarDragOffset);
-        return true;
+        return scroll.drag(event.y(), getY(), getHeight(), contentHeight());
     }
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (!draggingScrollbar) return false;
-        draggingScrollbar = false;
-        return true;
+        return scroll.releaseDrag();
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
         if (!isMouseOver(mouseX, mouseY)) return false;
-        scrollY = Math.clamp(scrollY - vertical * ROW_HEIGHT, 0, maxScroll());
+        scroll.scrollByWheel(vertical, ROW_HEIGHT, contentHeight(), getHeight());
         return true;
     }
 
@@ -133,47 +113,8 @@ public class McsdcServerListWidget extends AbstractWidget {
         return servers.size() * ROW_HEIGHT;
     }
 
-    private int maxScroll() {
-        return Math.max(0, contentHeight() - getHeight());
-    }
-
-    private boolean hasScrollbar() {
-        return contentHeight() > getHeight();
-    }
-
-    private int scrollbarX() {
-        return getX() + getWidth() - 6;
-    }
-
-    private int scrollbarThumbHeight() {
-        return Math.max(16, getHeight() * getHeight() / contentHeight());
-    }
-
-    private int scrollbarThumbY() {
-        int trackH = getHeight() - scrollbarThumbHeight();
-        return getY() + (int) ((scrollY / maxScroll()) * trackH);
-    }
-
-    private boolean isMouseOverScrollbar(double mouseX, double mouseY) {
-        int barX = scrollbarX();
-        int thumbY = scrollbarThumbY();
-        int thumbH = scrollbarThumbHeight();
-        return mouseX >= barX && mouseX < barX + 6 && mouseY >= thumbY && mouseY < thumbY + thumbH;
-    }
-
-    private void setScrollFromScrollbarY(double thumbY) {
-        int maxScroll = maxScroll();
-        int trackH = getHeight() - scrollbarThumbHeight();
-        if (maxScroll <= 0 || trackH <= 0) {
-            scrollY = 0;
-            return;
-        }
-        double relativeThumbY = Math.clamp(thumbY - getY(), 0, trackH);
-        scrollY = (relativeThumbY / trackH) * maxScroll;
-    }
-
     private int indexAtClick(double clickY) {
-        return ((int) clickY - getY() + (int) scrollY) / ROW_HEIGHT;
+        return ((int) clickY - getY() + scroll.scrollY()) / ROW_HEIGHT;
     }
 
     private boolean selectIndex(int idx) {

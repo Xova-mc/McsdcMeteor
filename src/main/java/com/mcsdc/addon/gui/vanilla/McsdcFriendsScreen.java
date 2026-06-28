@@ -15,7 +15,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class McsdcFriendsScreen extends McsdcParentScreen {
     private boolean locationsTab;
@@ -45,6 +44,7 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
             .bounds(margin + 84, 28, 100, UiLayout.BUTTON_HEIGHT).build());
 
         listWidget = new McsdcFriendListWidget(margin, top, width - margin * 2, listH);
+        listWidget.setOnSelectionChanged(this::updateActionBtn);
         addRenderableWidget(listWidget);
 
         if (!locationsTab) {
@@ -75,35 +75,25 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
         rebuildUi();
     }
 
-    private void rebuildUi() {
-        clearWidgets();
-        init();
-    }
-
     private void loadTab() {
         TabData tab = activeTab();
         if (!tab.loaded && !tab.loading) {
             status = "Loading...";
             tab.loading = true;
             String path = locationsTab ? "/my/friends/locations" : "/my/friends";
-            CompletableFuture.supplyAsync(() -> FriendsApi.requestGet(path))
-                .thenAccept(r -> minecraft.execute(() -> {
-                    if (r.ok()) tab.ok(FriendsApi.unwrapArray(r.body()));
-                    else tab.fail(r.error());
-                    if (tab != activeTab()) return;
-                    status = tab.error.isEmpty() ? "" : tab.error;
-                    populateList();
-                    updateActionBtn();
-                }))
-                .exceptionally(e -> {
-                    minecraft.execute(() -> {
-                        tab.fail(e.getMessage());
-                        if (tab != activeTab()) return;
-                        status = tab.error;
-                        populateList();
-                    });
-                    return null;
-                });
+            GuiAsync.run(minecraft, () -> FriendsApi.requestGet(path), r -> {
+                if (r.ok()) tab.ok(ServerSearchResults.unwrapArray(r.body()));
+                else tab.fail(r.error());
+                if (tab != activeTab()) return;
+                status = tab.error.isEmpty() ? "" : tab.error;
+                populateList();
+                updateActionBtn();
+            }, err -> {
+                tab.fail(err);
+                if (tab != activeTab()) return;
+                status = tab.error;
+                populateList();
+            });
         } else if (tab.loaded) {
             populateList();
         }
@@ -149,26 +139,19 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
         busy = "add";
         JsonObject body = new JsonObject();
         body.addProperty("name", name);
-        CompletableFuture.supplyAsync(() -> FriendsApi.requestPost("/my/friends", body))
-            .thenAccept(r -> minecraft.execute(() -> {
-                busy = null;
-                if (!r.ok()) status = r.error();
-                else {
-                    nameField.setValue("");
-                    list.invalidate();
-                    rebuildUi();
-                }
-            }))
-            .exceptionally(e -> {
-                minecraft.execute(() -> {
-                    busy = null;
-                    Throwable cause = e.getCause() != null ? e.getCause() : e;
-                    String msg = cause.getMessage();
-                    status = msg != null && !msg.isBlank() ? msg : "request failed";
-                    updateActionBtn();
-                });
-                return null;
-            });
+        GuiAsync.run(minecraft, () -> FriendsApi.requestPost("/my/friends", body), r -> {
+            busy = null;
+            if (!r.ok()) status = r.error();
+            else {
+                nameField.setValue("");
+                list.invalidate();
+                rebuildUi();
+            }
+        }, err -> {
+            busy = null;
+            status = err;
+            updateActionBtn();
+        });
     }
 
     private void runAction() {
@@ -185,25 +168,18 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
         busy = name;
         JsonObject body = new JsonObject();
         body.addProperty("name", name);
-        CompletableFuture.supplyAsync(() -> FriendsApi.requestPost("/my/friends/deny", body))
-            .thenAccept(r -> minecraft.execute(() -> {
-                busy = null;
-                if (!r.ok()) status = r.error();
-                else {
-                    list.invalidate();
-                    rebuildUi();
-                }
-            }))
-            .exceptionally(e -> {
-                minecraft.execute(() -> {
-                    busy = null;
-                    Throwable cause = e.getCause() != null ? e.getCause() : e;
-                    String msg = cause.getMessage();
-                    status = msg != null && !msg.isBlank() ? msg : "request failed";
-                    updateActionBtn();
-                });
-                return null;
-            });
+        GuiAsync.run(minecraft, () -> FriendsApi.requestPost("/my/friends/deny", body), r -> {
+            busy = null;
+            if (!r.ok()) status = r.error();
+            else {
+                list.invalidate();
+                rebuildUi();
+            }
+        }, err -> {
+            busy = null;
+            status = err;
+            updateActionBtn();
+        });
     }
 
     private void join(String address) {
@@ -214,7 +190,7 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
 
     private void updateActionBtn() {
         if (actionBtn == null) return;
-        McsdcFriendListWidget.Row row = listWidget != null ? listWidget.getSelectedRow() : null;
+        McsdcFriendListWidget.Row row = listWidget.getSelectedRow();
         if (locationsTab) {
             actionBtn.setMessage(Component.literal("Join"));
             actionBtn.active = row != null && canJoin(row.col2());
@@ -227,7 +203,7 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
-        context.centeredText(font, title, width / 2, UiLayout.HEADER_LABEL_Y, CommonColors.WHITE);
+        drawTitle(context);
         if (locationsTab) {
             context.text(font, "Name", UiLayout.margin(width) + 4, UiLayout.CONTENT_TOP + 16, CommonColors.GRAY, true);
             context.text(font, "Server", 136, UiLayout.CONTENT_TOP + 16, CommonColors.GRAY, true);
@@ -239,7 +215,6 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
         if (!status.isEmpty()) {
             context.centeredText(font, status, width / 2, UiLayout.footerY(height, width) - 38, CommonColors.YELLOW);
         }
-        updateActionBtn();
     }
 
     private static boolean canJoin(String server) {

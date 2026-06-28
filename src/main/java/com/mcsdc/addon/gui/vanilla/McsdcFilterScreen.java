@@ -7,12 +7,11 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.CommonColors;
 
-import java.util.List;
-import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class McsdcFilterScreen extends McsdcParentScreen {
-    @FunctionalInterface
-    private interface WidgetFactory extends BiFunction<Integer, Integer, AbstractWidget> {}
+    private record FilterDef(String name, Supplier<SearchFlag> get, Consumer<SearchFlag> set) {}
 
     private final BrowseSearchState state;
     private final FilterScrollLayout scroll = new FilterScrollLayout();
@@ -37,18 +36,19 @@ public class McsdcFilterScreen extends McsdcParentScreen {
         scroll.setBounds(margin, top, panelW, panelH);
         scroll.setGap(twoColumns ? 4 : 2);
 
-        addSection(List.of(
-            flag("Visited", () -> state.visited, f -> state.visited = f),
-            flag("Modded", () -> state.modded, f -> state.modded = f),
-            flag("Whitelist", () -> state.whitelist, f -> state.whitelist = f),
-            flag("Cracked", () -> state.cracked, f -> state.cracked = f),
-            flag("Griefed", () -> state.griefed, f -> state.griefed = f),
-            flag("Saved", () -> state.saved, f -> state.saved = f),
-            flag("Active", () -> state.active, f -> state.active = f),
-            flag("History", () -> state.hasHistory, f -> state.hasHistory = f),
-            flag("Notes", () -> state.hasNotes, f -> state.hasNotes = f),
-            toggle("Hide offline", () -> state.hideOffline, v -> state.hideOffline = v)
-        ), margin, colW, colGap, panelW, twoColumns);
+        addFlagSection(new FilterDef[] {
+            new FilterDef("Visited", () -> state.visited, f -> state.visited = f),
+            new FilterDef("Modded", () -> state.modded, f -> state.modded = f),
+            new FilterDef("Whitelist", () -> state.whitelist, f -> state.whitelist = f),
+            new FilterDef("Cracked", () -> state.cracked, f -> state.cracked = f),
+            new FilterDef("Griefed", () -> state.griefed, f -> state.griefed = f),
+            new FilterDef("Saved", () -> state.saved, f -> state.saved = f),
+            new FilterDef("Active", () -> state.active, f -> state.active = f),
+            new FilterDef("History", () -> state.hasHistory, f -> state.hasHistory = f),
+            new FilterDef("Notes", () -> state.hasNotes, f -> state.hasNotes = f),
+        }, margin, colW, colGap, panelW, twoColumns);
+
+        addRow(FilterWidgets.toggle("Hide offline", () -> state.hideOffline, v -> state.hideOffline = v, margin, 0, panelW));
 
         addRow(Button.builder(Component.literal("Version: " + state.version.version), b ->
             minecraft.setScreen(new McsdcVersionSelectScreen(this, state.version, v -> {
@@ -57,20 +57,20 @@ public class McsdcFilterScreen extends McsdcParentScreen {
             })))
             .bounds(margin, 0, panelW, UiLayout.BUTTON_HEIGHT).build());
 
-        addRow(FilterWidgets.toggle("Advanced MOTD", state.advancedMotd, v -> {
+        addRow(FilterWidgets.toggle("Advanced MOTD", () -> state.advancedMotd, v -> {
             state.advancedMotd = v;
             rebuildUi();
         }, margin, 0, panelW));
 
         if (state.advancedMotd) {
-            addSection(List.of(
-                flag("Default", () -> state.defaultMotd, f -> state.defaultMotd = f),
-                flag("Community", () -> state.communityMotd, f -> state.communityMotd = f),
-                flag("Creative", () -> state.creativeMotd, f -> state.creativeMotd = f),
-                flag("Bigotry", () -> state.bigotryMotd, f -> state.bigotryMotd = f),
-                flag("Furry", () -> state.furryMotd, f -> state.furryMotd = f),
-                flag("LGBT", () -> state.lgbtMotd, f -> state.lgbtMotd = f)
-            ), margin, colW, colGap, panelW, twoColumns);
+            addFlagSection(new FilterDef[] {
+                new FilterDef("Default", () -> state.defaultMotd, f -> state.defaultMotd = f),
+                new FilterDef("Community", () -> state.communityMotd, f -> state.communityMotd = f),
+                new FilterDef("Creative", () -> state.creativeMotd, f -> state.creativeMotd = f),
+                new FilterDef("Bigotry", () -> state.bigotryMotd, f -> state.bigotryMotd = f),
+                new FilterDef("Furry", () -> state.furryMotd, f -> state.furryMotd = f),
+                new FilterDef("LGBT", () -> state.lgbtMotd, f -> state.lgbtMotd = f),
+            }, margin, colW, colGap, panelW, twoColumns);
         }
 
         UiLayout.ButtonSlot done = UiLayout.footerButton(width, height, 100);
@@ -78,31 +78,19 @@ public class McsdcFilterScreen extends McsdcParentScreen {
             .bounds(done.x(), done.y(), done.width(), UiLayout.BUTTON_HEIGHT).build());
     }
 
-    private WidgetFactory flag(String name, java.util.function.Supplier<SearchFlag> get, java.util.function.Consumer<SearchFlag> set) {
-        return (x, w) -> FilterWidgets.cycleFlag(name, get.get(), set, x, 0, w);
-    }
-
-    private WidgetFactory toggle(String name, java.util.function.Supplier<Boolean> get, java.util.function.Consumer<Boolean> set) {
-        return (x, w) -> FilterWidgets.toggle(name, get.get(), set, x, 0, w);
-    }
-
-    private void addSection(
-        List<WidgetFactory> factories,
-        int margin,
-        int colW,
-        int colGap,
-        int panelW,
-        boolean twoColumns
-    ) {
-        for (int i = 0; i < factories.size(); ) {
-            if (twoColumns && i + 1 < factories.size()) {
+    private void addFlagSection(FilterDef[] defs, int margin, int colW, int colGap, int panelW, boolean twoColumns) {
+        for (int i = 0; i < defs.length; ) {
+            if (twoColumns && i + 1 < defs.length) {
+                FilterDef left = defs[i];
+                FilterDef right = defs[i + 1];
                 addPair(
-                    factories.get(i).apply(margin, colW),
-                    factories.get(i + 1).apply(margin + colW + colGap, colW)
+                    FilterWidgets.cycleFlag(left.name(), left.get, left.set, margin, 0, colW),
+                    FilterWidgets.cycleFlag(right.name(), right.get, right.set, margin + colW + colGap, 0, colW)
                 );
                 i += 2;
             } else {
-                addRow(factories.get(i).apply(margin, panelW));
+                FilterDef def = defs[i];
+                addRow(FilterWidgets.cycleFlag(def.name(), def.get, def.set, margin, 0, panelW));
                 i += 1;
             }
         }
@@ -119,11 +107,6 @@ public class McsdcFilterScreen extends McsdcParentScreen {
         scroll.addRow(left, right);
     }
 
-    private void rebuildUi() {
-        clearWidgets();
-        init();
-    }
-
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
         if (scroll.mouseScrolled(mouseX, mouseY, vertical)) return true;
@@ -133,7 +116,7 @@ public class McsdcFilterScreen extends McsdcParentScreen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
-        context.centeredText(font, title, width / 2, UiLayout.HEADER_LABEL_Y, CommonColors.WHITE);
+        drawTitle(context);
         context.centeredText(font, "Click to cycle · scroll for more", width / 2, UiLayout.CONTENT_TOP - 2, CommonColors.GRAY);
     }
 }

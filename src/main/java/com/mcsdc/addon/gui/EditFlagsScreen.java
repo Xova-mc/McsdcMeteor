@@ -1,7 +1,7 @@
 package com.mcsdc.addon.gui;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.mcsdc.addon.AddressQuery;
 import com.mcsdc.addon.McsdcHttp;
 import meteordevelopment.meteorclient.gui.GuiThemes;
 import meteordevelopment.meteorclient.gui.WindowScreen;
@@ -9,8 +9,6 @@ import meteordevelopment.meteorclient.gui.widgets.containers.WTable;
 import meteordevelopment.meteorclient.settings.*;
 
 import java.util.concurrent.CompletableFuture;
-
-import static meteordevelopment.meteorclient.MeteorClient.mc;
 
 public class EditFlagsScreen extends WindowScreen {
 
@@ -75,40 +73,26 @@ public class EditFlagsScreen extends WindowScreen {
 
     @Override
     public void initWidgets() {
-        CompletableFuture.supplyAsync(() -> McsdcHttp.postAddressQuery(this.ip)).thenAccept(response -> {
-            if (response == null || response.isEmpty()){
-                mc.execute(() -> add(theme.label("Not Valid")));
-                return;
+        AddressQuery.load(this.ip, jsonObject -> {
+            WTable table = add(theme.table()).widget();
+            table.minWidth = 300;
+
+            if (jsonObject.has("notes")) {
+                notesSetting.set(jsonObject.get("notes").getAsString());
             }
 
-            mc.execute(() -> {
-                JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
-
-                if (jsonObject.has("error")) {
-                    add(theme.label("Not Valid"));
-                    return;
-                }
-
-                WTable table = add(theme.table()).widget();
-                table.minWidth = 300;
-
-                if (jsonObject.has("notes")) {
-                    notesSetting.set(jsonObject.get("notes").getAsString());
-                }
-
-                JsonObject status = jsonObject.getAsJsonObject("status");
-                griefedSetting.set(status.get("griefed").getAsBoolean());
-                savedSetting.set(status.get("save_for_later").getAsBoolean());
-                visitedSetting.set(status.get("visited").getAsBoolean());
-                moddedSetting.set(status.get("modded").getAsBoolean());
-                whitelistSetting.set(status.get("whitelist").getAsBoolean());
-                bannedSetting.set(status.get("banned").getAsBoolean());
-                table.add(theme.settings(settings)).expandX();
-                table.row();
-                table.add(theme.button("Save")).expandX().widget().action = this::setMarked;
-                table.row();
-            });
-        });
+            JsonObject status = jsonObject.getAsJsonObject("status");
+            griefedSetting.set(status.get("griefed").getAsBoolean());
+            savedSetting.set(status.get("save_for_later").getAsBoolean());
+            visitedSetting.set(status.get("visited").getAsBoolean());
+            moddedSetting.set(status.get("modded").getAsBoolean());
+            whitelistSetting.set(status.get("whitelist").getAsBoolean());
+            bannedSetting.set(status.get("banned").getAsBoolean());
+            table.add(theme.settings(settings)).expandX();
+            table.row();
+            table.add(theme.button("Save")).expandX().widget().action = this::setMarked;
+            table.row();
+        }, () -> add(theme.label("Not Valid")));
     }
 
     public void setMarked(){

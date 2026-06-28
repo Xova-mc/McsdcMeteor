@@ -43,7 +43,7 @@ public class McsdcVersionSelectScreen extends McsdcParentScreen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
-        context.centeredText(font, title, width / 2, UiLayout.HEADER_LABEL_Y, CommonColors.WHITE);
+        drawTitle(context);
     }
 
     private static final class VersionListWidget extends AbstractWidget {
@@ -51,9 +51,7 @@ public class McsdcVersionSelectScreen extends McsdcParentScreen {
 
         private final SearchVersion selected;
         private final Consumer<SearchVersion> onSelect;
-        private double scrollY;
-        private boolean draggingScrollbar;
-        private double scrollbarDragOffset;
+        private final ScrollMetrics scroll = new ScrollMetrics();
 
         private VersionListWidget(int x, int y, int width, int height, SearchVersion selected, Consumer<SearchVersion> onSelect) {
             super(x, y, width, height, Component.empty());
@@ -67,6 +65,7 @@ public class McsdcVersionSelectScreen extends McsdcParentScreen {
             int y = getY();
             int w = getWidth();
             int h = getHeight();
+            int contentH = contentHeight();
 
             context.fill(x, y, x + w, y + h, 0xC0101010);
             context.enableScissor(x, y, x + w, y + h);
@@ -74,7 +73,7 @@ public class McsdcVersionSelectScreen extends McsdcParentScreen {
             var font = Minecraft.getInstance().font;
             SearchVersion[] versions = SearchVersion.values();
             for (int i = 0; i < versions.length; i++) {
-                int rowY = y + 1 + i * ROW_HEIGHT - (int) scrollY;
+                int rowY = y + 1 + i * ROW_HEIGHT - scroll.scrollY();
                 if (rowY + ROW_HEIGHT < y) continue;
                 if (rowY > y + h) break;
 
@@ -90,7 +89,7 @@ public class McsdcVersionSelectScreen extends McsdcParentScreen {
             }
 
             context.disableScissor();
-            drawScrollbar(context);
+            scroll.draw(context, x, y, w, h, contentH);
         }
 
         @Override
@@ -98,14 +97,10 @@ public class McsdcVersionSelectScreen extends McsdcParentScreen {
             if (!active || !visible) return false;
             if (!isMouseOver(event.x(), event.y())) return false;
 
-            if (hasScrollbar() && isMouseOverScrollbar(event.x(), event.y())) {
-                draggingScrollbar = true;
-                scrollbarDragOffset = event.y() - scrollbarThumbY();
-                setScrollFromScrollbarY(event.y() - scrollbarDragOffset);
-                return true;
-            }
+            int contentH = contentHeight();
+            if (scroll.startDrag(event.x(), event.y(), getX(), getY(), getWidth(), getHeight(), contentH)) return true;
 
-            int index = ((int) event.y() - getY() + (int) scrollY) / ROW_HEIGHT;
+            int index = ((int) event.y() - getY() + scroll.scrollY()) / ROW_HEIGHT;
             SearchVersion[] versions = SearchVersion.values();
             if (index >= 0 && index < versions.length) {
                 onSelect.accept(versions[index]);
@@ -116,22 +111,18 @@ public class McsdcVersionSelectScreen extends McsdcParentScreen {
 
         @Override
         public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
-            if (!draggingScrollbar) return false;
-            setScrollFromScrollbarY(event.y() - scrollbarDragOffset);
-            return true;
+            return scroll.drag(event.y(), getY(), getHeight(), contentHeight());
         }
 
         @Override
         public boolean mouseReleased(MouseButtonEvent event) {
-            if (!draggingScrollbar) return false;
-            draggingScrollbar = false;
-            return true;
+            return scroll.releaseDrag();
         }
 
         @Override
         public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
             if (!isMouseOver(mouseX, mouseY)) return false;
-            scrollY = Math.clamp(scrollY - vertical * ROW_HEIGHT, 0, maxScroll());
+            scroll.scrollByWheel(vertical, ROW_HEIGHT, contentHeight(), getHeight());
             return true;
         }
 
@@ -140,55 +131,8 @@ public class McsdcVersionSelectScreen extends McsdcParentScreen {
             defaultButtonNarrationText(builder);
         }
 
-        private void drawScrollbar(GuiGraphicsExtractor context) {
-            if (!hasScrollbar()) return;
-            int barX = scrollbarX();
-            int thumbY = scrollbarThumbY();
-            int thumbH = scrollbarThumbHeight();
-            context.fill(barX, getY(), barX + 5, getY() + getHeight(), 0x40FFFFFF);
-            context.fill(barX, thumbY, barX + 5, thumbY + thumbH, 0xFFFFFFFF);
-        }
-
-        private boolean hasScrollbar() {
-            return contentHeight() > getHeight();
-        }
-
         private int contentHeight() {
             return SearchVersion.values().length * ROW_HEIGHT;
-        }
-
-        private int maxScroll() {
-            return Math.max(0, contentHeight() - getHeight());
-        }
-
-        private int scrollbarX() {
-            return getX() + getWidth() - 6;
-        }
-
-        private int scrollbarThumbHeight() {
-            return Math.max(16, getHeight() * getHeight() / contentHeight());
-        }
-
-        private int scrollbarThumbY() {
-            int trackH = getHeight() - scrollbarThumbHeight();
-            return getY() + (int) ((scrollY / maxScroll()) * trackH);
-        }
-
-        private boolean isMouseOverScrollbar(double mouseX, double mouseY) {
-            int barX = scrollbarX();
-            int thumbY = scrollbarThumbY();
-            int thumbH = scrollbarThumbHeight();
-            return mouseX >= barX && mouseX < barX + 6 && mouseY >= thumbY && mouseY < thumbY + thumbH;
-        }
-
-        private void setScrollFromScrollbarY(double thumbY) {
-            int trackH = getHeight() - scrollbarThumbHeight();
-            if (trackH <= 0) {
-                scrollY = 0;
-                return;
-            }
-            double relativeThumbY = Math.clamp(thumbY - getY(), 0, trackH);
-            scrollY = (relativeThumbY / trackH) * maxScroll();
         }
     }
 }
