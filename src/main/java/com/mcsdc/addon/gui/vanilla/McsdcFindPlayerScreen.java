@@ -101,16 +101,15 @@ public class McsdcFindPlayerScreen extends McsdcParentScreen {
     }
 
     private void updateButtons() {
-        if (joinBtn == null) return;
         boolean sel = serverList.getSelectedServer() != null;
         ServerListActions.setActive(sel, joinBtn, addBtn, infoBtn);
-        if (addAllBtn != null) addAllBtn.active = !results.isEmpty();
+        addAllBtn.active = !results.isEmpty();
     }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
-        context.centeredText(font, title, width / 2, UiLayout.HEADER_LABEL_Y, CommonColors.WHITE);
+        drawTitle(context);
         if (!status.isEmpty()) {
             context.centeredText(font, status, width / 2, 52, CommonColors.YELLOW);
         }

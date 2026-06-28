@@ -66,14 +66,13 @@ public class McsdcRecentScreen extends McsdcParentScreen {
     }
 
     private void updateButtons() {
-        if (joinBtn == null) return;
         ServerListActions.setActive(serverList.getSelectedServer() != null, joinBtn, addBtn, infoBtn, removeBtn);
     }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
-        context.centeredText(font, title, width / 2, UiLayout.HEADER_LABEL_Y, CommonColors.WHITE);
+        drawTitle(context);
         if (servers.isEmpty()) {
             context.centeredText(font, "Recently joined servers will appear here.", width / 2, height / 2, CommonColors.GRAY);
         }

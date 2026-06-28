@@ -44,6 +44,7 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
             .bounds(margin + 84, 28, 100, UiLayout.BUTTON_HEIGHT).build());
 
         listWidget = new McsdcFriendListWidget(margin, top, width - margin * 2, listH);
+        listWidget.setOnSelectionChanged(this::updateActionBtn);
         addRenderableWidget(listWidget);
 
         if (!locationsTab) {
@@ -72,11 +73,6 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
         locationsTab = showLocations;
         activeTab().invalidate();
         rebuildUi();
-    }
-
-    private void rebuildUi() {
-        clearWidgets();
-        init();
     }
 
     private void loadTab() {
@@ -194,7 +190,7 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
 
     private void updateActionBtn() {
         if (actionBtn == null) return;
-        McsdcFriendListWidget.Row row = listWidget != null ? listWidget.getSelectedRow() : null;
+        McsdcFriendListWidget.Row row = listWidget.getSelectedRow();
         if (locationsTab) {
             actionBtn.setMessage(Component.literal("Join"));
             actionBtn.active = row != null && canJoin(row.col2());
@@ -207,7 +203,7 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
-        context.centeredText(font, title, width / 2, UiLayout.HEADER_LABEL_Y, CommonColors.WHITE);
+        drawTitle(context);
         if (locationsTab) {
             context.text(font, "Name", UiLayout.margin(width) + 4, UiLayout.CONTENT_TOP + 16, CommonColors.GRAY, true);
             context.text(font, "Server", 136, UiLayout.CONTENT_TOP + 16, CommonColors.GRAY, true);
@@ -219,7 +215,6 @@ public class McsdcFriendsScreen extends McsdcParentScreen {
         if (!status.isEmpty()) {
             context.centeredText(font, status, width / 2, UiLayout.footerY(height, width) - 38, CommonColors.YELLOW);
         }
-        updateActionBtn();
     }
 
     private static boolean canJoin(String server) {

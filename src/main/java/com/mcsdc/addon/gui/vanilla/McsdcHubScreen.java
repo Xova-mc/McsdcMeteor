@@ -60,7 +60,7 @@ public class McsdcHubScreen extends McsdcParentScreen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
-        context.centeredText(font, title, width / 2, UiLayout.HEADER_LABEL_Y, CommonColors.WHITE);
+        drawTitle(context);
         context.centeredText(font, "Logged in as: " + McsdcSystem.get().getUsername(), width / 2, UiLayout.CONTENT_TOP, CommonColors.LIGHT_GRAY);
     }
 

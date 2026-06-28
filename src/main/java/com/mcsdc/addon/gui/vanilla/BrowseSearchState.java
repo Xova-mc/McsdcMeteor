@@ -1,8 +1,13 @@
 package com.mcsdc.addon.gui.vanilla;
 
+import com.google.gson.JsonObject;
+import com.mcsdc.addon.system.MOTD;
+import com.mcsdc.addon.system.ServerSearchBuilder;
 import com.mcsdc.addon.system.ServerStorage;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public final class BrowseSearchState {
@@ -61,6 +66,33 @@ public final class BrowseSearchState {
     public Object resolveVersion() {
         if (version.number != -1) return version.number;
         return null;
+    }
+
+    @Nullable
+    public JsonObject toSearchJson() {
+        Object ver = resolveVersion();
+        if (ver instanceof String s && s.isEmpty()) return null;
+
+        HashMap<MOTD, Boolean> motds = null;
+        if (advancedMotd) {
+            motds = new HashMap<>();
+            motds.put(MOTD.DEFAULT, defaultMotd.bool);
+            motds.put(MOTD.COMMUNITY, communityMotd.bool);
+            motds.put(MOTD.CREATIVE, creativeMotd.bool);
+            motds.put(MOTD.BIGOTRY, bigotryMotd.bool);
+            motds.put(MOTD.FURRY, furryMotd.bool);
+            motds.put(MOTD.LGBT, lgbtMotd.bool);
+        }
+
+        ServerSearchBuilder.Extra extra = new ServerSearchBuilder.Extra(hasHistory.bool, hasNotes.bool, motds);
+        ServerSearchBuilder.Flags flags = new ServerSearchBuilder.Flags(
+            visited.bool, griefed.bool, modded.bool, saved.bool,
+            whitelist.bool, active.bool, cracked.bool
+        );
+        ServerSearchBuilder.Search search = new ServerSearchBuilder.Search(
+            new ServerSearchBuilder.Version(ver), flags, extra
+        );
+        return ServerSearchBuilder.createJson(search);
     }
 
     public boolean allCoreFlagsAny() {
