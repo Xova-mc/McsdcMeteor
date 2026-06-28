@@ -28,7 +28,7 @@ public final class FilterWidgets {
     }
 
     public static Button cycleFlag(String name, Supplier<SearchFlag> get, Consumer<SearchFlag> set, int x, int y, int width) {
-        return cycle(name, get, SearchFlag::next, SearchFlag::label, set, x, y, width);
+        return cycle(name, get, flag -> flag.next(), flag -> flag.label(), set, x, y, width);
     }
 
     public static Button toggle(String name, Supplier<Boolean> get, Consumer<Boolean> set, int x, int y, int width) {

@@ -46,7 +46,7 @@ public final class ServerListActions {
 
     public static void addAll(List<ServerStorage> servers) {
         if (servers.isEmpty()) return;
-        ServerListHelper.addAllMcsdcServers(servers.stream().map(ServerStorage::ip).toList());
+        ServerListHelper.addAllMcsdcServers(servers.stream().map(s -> s.ip()).toList());
     }
 
     @Nullable
