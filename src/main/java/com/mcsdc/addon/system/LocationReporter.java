@@ -24,10 +24,13 @@ public final class LocationReporter {
 
     @EventHandler
     private void onGameJoined(GameJoinedEvent event) {
-        if (McsdcSystem.get().getToken().isEmpty()) return;
+        McsdcSystem system = McsdcSystem.get();
+        if (system.getToken().isEmpty() || !system.isShareLocation()) return;
         String server = playSessionServer();
         if (server == null) return;
-        CompletableFuture.runAsync(() -> FriendsApi.post("/my/location", buildPayload(server)).ignoreExceptions().send());
+        // build on the game thread (mc.player can go null mid-flight), send off-thread
+        JsonObject payload = buildPayload(server);
+        CompletableFuture.runAsync(() -> FriendsApi.post("/my/location", payload).ignoreExceptions().send());
     }
 
     @EventHandler
@@ -39,7 +42,8 @@ public final class LocationReporter {
     @Nullable
     private static String playSessionServer() {
         if (mc.player == null || mc.level == null) return null;
-        if (mc.isSingleplayer()) return "";
+        // never report local worlds
+        if (mc.isSingleplayer()) return null;
         ClientPacketListener handler = mc.getConnection();
         if (handler == null) return null;
         ServerData info = handler.getServerData();
@@ -52,12 +56,6 @@ public final class LocationReporter {
         body.addProperty("server", server);
         body.addProperty("name", mc.player.getName().getString());
         body.addProperty("uuid", mc.player.getStringUUID());
-
-        JsonObject pos = new JsonObject();
-        pos.addProperty("x", mc.player.getX());
-        pos.addProperty("y", mc.player.getY());
-        pos.addProperty("z", mc.player.getZ());
-        body.add("pos", pos);
 
         int ping = 0;
         ClientPacketListener handler = mc.getConnection();

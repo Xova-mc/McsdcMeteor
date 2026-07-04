@@ -24,7 +24,7 @@ public class McsdcHubScreen extends McsdcParentScreen {
         int cx = width / 2;
         int footerY = UiLayout.footerY(height, width);
         int bw = Math.min(200, width - UiLayout.margin(width) * 2);
-        int buttonCount = 6;
+        int buttonCount = 7;
         int startY = UiLayout.CONTENT_TOP + 12;
         int available = footerY - startY - 8;
         UiLayout.VerticalMenu menu = UiLayout.verticalMenu(available, buttonCount);
@@ -46,6 +46,13 @@ public class McsdcHubScreen extends McsdcParentScreen {
         y += menu.step();
 
         addMenuButton("Clear MCSDC Servers", y, bw, menu.itemHeight(), b -> ServerListHelper.removeMcsdcServers());
+        y += menu.step();
+
+        addMenuButton(shareLocationLabel(), y, bw, menu.itemHeight(), b -> {
+            McsdcSystem system = McsdcSystem.get();
+            system.setShareLocation(!system.isShareLocation());
+            b.setMessage(Component.literal(shareLocationLabel()));
+        });
 
         addRenderableWidget(Button.builder(Component.literal("Logout"), b -> {
             McsdcSystem.get().setToken("");
@@ -62,6 +69,10 @@ public class McsdcHubScreen extends McsdcParentScreen {
         super.extractRenderState(context, mouseX, mouseY, delta);
         drawTitle(context);
         context.centeredText(font, "Logged in as: " + McsdcSystem.get().getUsername(), width / 2, UiLayout.CONTENT_TOP, CommonColors.LIGHT_GRAY);
+    }
+
+    private static String shareLocationLabel() {
+        return "Share Location with Friends: " + (McsdcSystem.get().isShareLocation() ? "On" : "Off");
     }
 
     private void addMenuButton(String label, int y, int width, int height, Button.OnPress action) {

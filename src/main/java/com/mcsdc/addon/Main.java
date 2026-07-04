@@ -14,8 +14,8 @@ import static meteordevelopment.meteorclient.MeteorClient.mc;
 
 public class Main extends MeteorAddon {
     public static final Logger LOG = LogUtils.getLogger();
-    public static String mainEndpoint = "https://interact.mcsdc.online/api";
-    public static String friendsApiBase = "https://interact.mcsdc.online/api2";
+    public static final String mainEndpoint = "https://interact.mcsdc.online/api";
+    public static final String friendsApiBase = "https://interact.mcsdc.online/api2";
 
     @Override
     public void onInitialize() {
@@ -38,6 +38,8 @@ public class Main extends MeteorAddon {
     public static String getTicketID(){
         if (mc == null || mc.getConnection() == null) return "";
 
-        return TicketIDGenerator.generateTicketID(mc.getConnection().getServerData().ip);
+        // getServerData() is null in singleplayer
+        var info = mc.getConnection().getServerData();
+        return info == null ? "" : TicketIDGenerator.generateTicketID(info.ip);
     }
 }

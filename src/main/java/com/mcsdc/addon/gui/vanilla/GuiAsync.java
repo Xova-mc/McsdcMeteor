@@ -11,7 +11,15 @@ public final class GuiAsync {
 
     public static <T> void run(Minecraft mc, Supplier<T> work, Consumer<T> ok, Consumer<String> err) {
         CompletableFuture.supplyAsync(work)
-            .thenAccept(result -> mc.execute(() -> ok.accept(result)))
+            .thenAccept(result -> mc.execute(() -> {
+                // ok runs on the render thread; an uncaught throw here (e.g. on a malformed
+                // API response) would crash the game instead of showing an error
+                try {
+                    ok.accept(result);
+                } catch (Exception ex) {
+                    err.accept(errorMessage(ex));
+                }
+            }))
             .exceptionally(ex -> {
                 mc.execute(() -> err.accept(errorMessage(ex)));
                 return null;

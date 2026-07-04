@@ -16,6 +16,7 @@ public class McsdcSystem extends System<McsdcSystem> {
     private String token = "";
     private String username = "";
     private String lastServer = "";
+    private boolean shareLocation = true;
     private final List<ServerStorage> serverQueue = new ArrayList<>();
     private int currentServerIndex = 0;
 
@@ -34,7 +35,16 @@ public class McsdcSystem extends System<McsdcSystem> {
     }
 
     public void setToken(String token) {
-        this.token = token;
+        // stray whitespace/newlines from pasting would make HttpClient reject the auth header
+        this.token = token == null ? "" : token.trim();
+    }
+
+    public boolean isShareLocation() {
+        return shareLocation;
+    }
+
+    public void setShareLocation(boolean shareLocation) {
+        this.shareLocation = shareLocation;
     }
 
     public String getUsername() {
@@ -107,6 +117,7 @@ public class McsdcSystem extends System<McsdcSystem> {
         CompoundTag compound = new CompoundTag();
         compound.putString("token", this.token);
         compound.putString("username", this.username);
+        compound.putBoolean("shareLocation", this.shareLocation);
 
         ListTag list = new ListTag();
 
@@ -138,19 +149,15 @@ public class McsdcSystem extends System<McsdcSystem> {
     public McsdcSystem fromTag(CompoundTag tag) {
         this.token = tag.getString("token").orElse("");
         this.username = tag.getString("username").orElse("");
+        this.shareLocation = tag.getBoolean("shareLocation").orElse(true);
 
+        // keep insertion order (oldest first) so eviction in addRecentServer stays correct
         ListTag list = tag.getList("recent").orElse(new ListTag());
-        List<ServerStorage> tempList = new ArrayList<>();
         for (Tag element : list) {
             CompoundTag compound = (CompoundTag) element;
             String ip = compound.getString("ip").orElse("");
             String ver = compound.getString("version").orElse("");
-            tempList.add(new ServerStorage(ip, ver, null, null));
-        }
-
-        for (int i = tempList.size() - 1; i >= 0; i--) {
-            ServerStorage s = tempList.get(i);
-            recentServers.put(s.ip(), s);
+            recentServers.put(ip, new ServerStorage(ip, ver, null, null));
         }
 
         serverQueue.clear();

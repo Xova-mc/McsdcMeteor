@@ -56,7 +56,8 @@ public final class ServerListHelper {
     }
 
     private static boolean isMcsdcEntry(ServerData info) {
-        return info.name.startsWith(MCSdc_PREFIX);
+        // only match entries we created ("Mcsdc <ip>"), not user servers that happen to start with "Mcsdc"
+        return info.name.equals(MCSdc_PREFIX + " " + info.ip);
     }
 
     public static ServerData serverData(String ip) {

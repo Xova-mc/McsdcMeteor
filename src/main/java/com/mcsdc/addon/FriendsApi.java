@@ -98,7 +98,10 @@ public final class FriendsApi {
         try {
             JsonElement parsed = JsonParser.parseString(body);
             if (parsed.isJsonObject()) return errorFrom(parsed.getAsJsonObject());
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            // not JSON at all; treating it as success would crash callers that parse the body
+            return "Invalid response.";
+        }
         return null;
     }
 

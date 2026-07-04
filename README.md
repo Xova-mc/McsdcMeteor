@@ -26,7 +26,7 @@ hub from main menu / multiplayer. find servers, find player, friends, recent, ti
 
 search servers with filters, join or add to your list, hit **info** for flags/history/ticket id. **edit flags** if your token has write access (also on pause menu / disconnect screen). last search stays loaded so you dont have to re-fetch the same list.
 
-friends tab shows who you are friends with and who's currently on a server, you can join your friends directly from there. **add** puts servers in multiplayer as `Mcsdc ...`, hub has **clear MCSDC servers**. searched a bunch? **next server** in pause/disconnect cycles the queue. `.ticketID` copies current server's ticket id.
+friends tab shows who you are friends with and who's currently on a server, you can join your friends directly from there. while logged in, the addon reports which server you're on (name, uuid, server address, ping) so friends can see and join you — toggle this off in the hub via **Share Location with Friends**. singleplayer is never reported. **add** puts servers in multiplayer as `Mcsdc ...`, hub has **clear MCSDC servers**. searched a bunch? **next server** in pause/disconnect cycles the queue. `.ticketID` copies current server's ticket id.
 
 ## Disclaimer
 

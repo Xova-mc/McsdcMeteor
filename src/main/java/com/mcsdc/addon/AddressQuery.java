@@ -12,13 +12,13 @@ public final class AddressQuery {
     private AddressQuery() {}
 
     public static void load(String ip, Consumer<JsonObject> onOk, Runnable onInvalid) {
-        GuiAsync.run(mc, () -> McsdcHttp.postAddressQuery(ip), response -> {
-            if (response == null || response.isEmpty()) {
-                onInvalid.run();
-                return;
-            }
+        GuiAsync.run(mc, () -> {
+            String response = McsdcHttp.postAddressQuery(ip);
+            if (response == null || response.isEmpty()) return null;
             JsonObject obj = JsonParser.parseString(response).getAsJsonObject();
-            if (obj.has("error")) onInvalid.run();
+            return obj.has("error") ? null : obj;
+        }, obj -> {
+            if (obj == null) onInvalid.run();
             else onOk.accept(obj);
         }, err -> onInvalid.run());
     }

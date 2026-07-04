@@ -9,6 +9,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -17,7 +18,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MultiplayerScreenMixin extends Screen {
     @Shadow
     protected ServerSelectionList serverSelectionList;
-    private Button getInfoButton;
+
+    @Unique
+    private Button mcsdc$infoButton;
 
     protected MultiplayerScreenMixin() {
         super(null);
@@ -38,7 +41,7 @@ public abstract class MultiplayerScreenMixin extends Screen {
                 .build()
         );
 
-        this.getInfoButton = this.addRenderableWidget(
+        this.mcsdc$infoButton = this.addRenderableWidget(
             new Button.Builder(
                 Component.literal("Server Info"),
                 onPress -> {
@@ -58,6 +61,6 @@ public abstract class MultiplayerScreenMixin extends Screen {
     @Inject(method = "onSelectedChange", at = @At("TAIL"))
     private void onSelectedChangeTail(CallbackInfo info) {
         ServerSelectionList.Entry entry = this.serverSelectionList.getSelected();
-        this.getInfoButton.active = entry instanceof ServerSelectionList.OnlineServerEntry;
+        this.mcsdc$infoButton.active = entry instanceof ServerSelectionList.OnlineServerEntry;
     }
 }
